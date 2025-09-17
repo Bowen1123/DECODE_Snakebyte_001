@@ -24,10 +24,6 @@ public class Camera_AprilTag extends LinearOpMode {
 
         initAprilTag();
 
-        // Wait for the DS start button to be touched.
-        telemetry.addData("DS preview on/off", "3 dots, Camera Stream");
-        telemetry.addData(">", "Touch START to start OpMode");
-        telemetry.update();
         waitForStart();
 
         if (opModeIsActive()) {
@@ -35,25 +31,21 @@ public class Camera_AprilTag extends LinearOpMode {
 
                 telemetryAprilTag();
 
-                // Push telemetry to the Driver Station.
                 telemetry.update();
 
-                // Save CPU resources; can resume streaming when needed.
                 if (gamepad1.dpad_down) {
                     visionPortal.stopStreaming();
                 } else if (gamepad1.dpad_up) {
                     visionPortal.resumeStreaming();
                 }
 
-                // Share the CPU.
                 sleep(20);
             }
         }
 
-        // Save more CPU resources when camera is no longer needed.
         visionPortal.close();
 
-    }   // end method runOpMode()
+    }
 
     /**
      * Initialize the AprilTag processor.
