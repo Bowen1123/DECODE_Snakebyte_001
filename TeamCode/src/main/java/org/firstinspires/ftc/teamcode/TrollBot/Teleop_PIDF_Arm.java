@@ -5,15 +5,14 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
 @TeleOp(name="Teleop")
-public class Teleop extends OpMode {
+public class Teleop_PIDF_Arm extends OpMode {
 
     private DcMotor arm;
-    private PIDFController controller;
+    private PIDFArmController controller;
     private FtcDashboard dashboard;
 
     private double targetTicks = 0;
@@ -29,7 +28,7 @@ public class Teleop extends OpMode {
         arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        controller = new PIDFController();
+        controller = new PIDFArmController();
         dashboard = FtcDashboard.getInstance();
     }
 
@@ -74,10 +73,10 @@ public class Teleop extends OpMode {
         pkt.put("pos", pos);
         pkt.put("error", targetTicks - pos);
         pkt.put("power", power);
-        pkt.put("kP", PIDFController.kP);
-        pkt.put("kI", PIDFController.kI);
-        pkt.put("kD", PIDFController.kD);
-        pkt.put("kF", PIDFController.kF);
+        pkt.put("kP", PIDFArmController.kP);
+        pkt.put("kI", PIDFArmController.kI);
+        pkt.put("kD", PIDFArmController.kD);
+        pkt.put("kF", PIDFArmController.kF);
         dashboard.sendTelemetryPacket(pkt);
     }
 }

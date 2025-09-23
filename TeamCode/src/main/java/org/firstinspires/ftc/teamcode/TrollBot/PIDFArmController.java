@@ -2,16 +2,25 @@ package org.firstinspires.ftc.teamcode.TrollBot;
 
 import com.acmerobotics.dashboard.config.Config;
 
+
+
+/*
+    Bowen - I tuned this arm for a 435 rmp, if we ever for any reason need to use this somehwere else,
+            duplicate and retune!
+ */
+
+
+
 @Config
-public class PIDFController {
+public class PIDFArmController {
 
     // -------- Tunables (Dashboard) --------
-    public static double kP = 0.015;
+    public static double kP = 0.0015;
 
     // Need to tune in lab
-    public static double kI = 0.0;
-    public static double kD = 0.0;
-    public static double kF = 0.0;
+    public static double kI = 0.000001;
+    public static double kD = 0.000015;
+    public static double kF = 0.0035;
 
 
     // We can adjust these values based on if we need to use the max power
@@ -19,7 +28,7 @@ public class PIDFController {
     public static double MAX_OUTPUT =  1.0;
 
     public static double MAX_INTEGRAL = 0.4; // I saw this online so we keeping it
-    public static double ERROR_DEADBAND = 0.0; // This term tracks the allowed tolerance in the arm's movement/target pos
+    public static double ERROR_DEADBAND = 1.2; // This term tracks the allowed tolerance in the arm's movement/target pos
 
     private double integral = 0.0;
     private double prevError = 0.0;
