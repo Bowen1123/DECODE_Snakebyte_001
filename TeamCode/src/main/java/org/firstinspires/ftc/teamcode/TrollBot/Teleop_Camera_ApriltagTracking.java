@@ -17,6 +17,9 @@ import java.util.List;
 @TeleOp(name = "ApriltagTracking")
 public class Teleop_Camera_ApriltagTracking extends OpMode {
 
+    // Use this for tuning
+    private static double SPEED_MULTIPLIER = .6;
+
     // ----------- Drivetrain -----------
     private DcMotor frontLeft, frontRight, backLeft, backRight;
 
@@ -48,10 +51,10 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
         backRight  = hardwareMap.get(DcMotor.class, "backRight");
 
         // Typical mecanum directions (adjust if your robot moves wrong)
-        frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        frontRight.setDirection(DcMotorSimple.Direction.FORWARD);
-        backRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        frontLeft.setDirection(DcMotorSimple.Direction.FORWARD);
+        backLeft.setDirection(DcMotorSimple.Direction.FORWARD);
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
 
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -75,10 +78,10 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
 
     @Override
     public void loop() {
-        // Driver inputs (robot-centric)
-        double fwd    = -gamepad1.left_stick_y;  // forward (+)
-        double strafe = -gamepad1.left_stick_x;  // left (+)
-        double rotate = -gamepad1.right_stick_x; // CCW (+)
+        // Driver inputs
+        double fwd    = gamepad1.left_stick_y;
+        double strafe = gamepad1.left_stick_x;
+        double rotate = gamepad1.right_stick_x;
 
         // Find the desired tag in the current detections
         boolean targetFound = false;
@@ -180,9 +183,11 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
             fl /= max; fr /= max; bl /= max; br /= max;
         }
 
-        frontLeft.setPower(fl);
-        frontRight.setPower(fr);
-        backLeft.setPower(bl);
-        backRight.setPower(br);
+
+
+        frontLeft.setPower(fl / SPEED_MULTIPLIER);
+        frontRight.setPower(fr / SPEED_MULTIPLIER);
+        backLeft.setPower(bl / SPEED_MULTIPLIER);
+        backRight.setPower(br / SPEED_MULTIPLIER);
     }
 }
