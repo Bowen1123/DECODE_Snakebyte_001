@@ -22,7 +22,7 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
 
     // ----------- Vision -----------
     private static final boolean USE_WEBCAM = true;
-    public static int DESIRED_TAG_ID = 7; // <-- set the only tag to lock onto
+    public static int DESIRED_TAG_ID = 23; // <-- set the only tag to lock onto
     private VisionPortal visionPortal;
     private AprilTagProcessor aprilTag;
     private AprilTagDetection desiredTag;
@@ -33,7 +33,7 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
 
     // ----------- Heading PID (degrees) -----------
     // Bearing from ftcPose is in degrees; we keep PID in degrees for clarity.
-    private final PIDHeadingController headingPid = new PIDHeadingController(0.020, 0.000, 0.002); // tune on your bot!
+    private final PIDHeadingController headingPid = new PIDHeadingController(0.020, 0.000, 0.001); // tune!
     private double lastPidTurn = 0.0;
 
     // Optional caps
@@ -43,9 +43,9 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
     public void init() {
         // Motors
         frontLeft  = hardwareMap.get(DcMotor.class, "frontLeft");
-        frontRight = hardwareMap.get(DcMotor.class, "front_right_drive");
-        backLeft   = hardwareMap.get(DcMotor.class, "back_left_drive");
-        backRight  = hardwareMap.get(DcMotor.class, "back_right_drive");
+        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
+        backLeft   = hardwareMap.get(DcMotor.class, "backLeft");
+        backRight  = hardwareMap.get(DcMotor.class, "backRight");
 
         // Typical mecanum directions (adjust if your robot moves wrong)
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
