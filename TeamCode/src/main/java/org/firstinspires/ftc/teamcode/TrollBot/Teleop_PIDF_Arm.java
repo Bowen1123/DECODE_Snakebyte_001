@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
-@TeleOp(name="Teleop")
+@TeleOp(name="Teleop_PIDF_Arm")
 public class Teleop_PIDF_Arm extends OpMode {
 
     private DcMotor arm;
