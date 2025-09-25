@@ -25,7 +25,9 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
 
     // ----------- Vision -----------
     private static final boolean USE_WEBCAM = true;
-    public static int DESIRED_TAG_ID = 23; // <-- set the only tag to lock onto
+
+    // 20 is blue, 24 is red
+    public static int DESIRED_TAG_ID = 20; // <-- set the only tag to lock onto
     private VisionPortal visionPortal;
     private AprilTagProcessor aprilTag;
     private AprilTagDetection desiredTag;
@@ -143,7 +145,6 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
         }
     }
 
-    /** Initialize the AprilTag processor and VisionPortal. */
     private void initAprilTag() {
         aprilTag = new AprilTagProcessor.Builder()
                 .setDrawAxes(true)
@@ -166,10 +167,6 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
         }
     }
 
-    /**
-     * Move robot according to desired axes motions (mecanum).
-     * x: forward (+), y: strafe left (+), yaw: CCW (+)
-     */
     private void moveRobot(double x, double y, double yaw) {
         double fl =  x - y - yaw;
         double fr =  x + y + yaw;
@@ -185,9 +182,9 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
 
 
 
-        frontLeft.setPower(fl / SPEED_MULTIPLIER);
-        frontRight.setPower(fr / SPEED_MULTIPLIER);
-        backLeft.setPower(bl / SPEED_MULTIPLIER);
-        backRight.setPower(br / SPEED_MULTIPLIER);
+        frontLeft.setPower(fl * SPEED_MULTIPLIER);
+        frontRight.setPower(fr * SPEED_MULTIPLIER);
+        backLeft.setPower(bl * SPEED_MULTIPLIER);
+        backRight.setPower(br * SPEED_MULTIPLIER);
     }
 }
