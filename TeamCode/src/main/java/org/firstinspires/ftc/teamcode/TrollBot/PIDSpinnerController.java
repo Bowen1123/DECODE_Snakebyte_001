@@ -5,119 +5,73 @@ import com.acmerobotics.dashboard.config.Config;
 @Config
 public class PIDSpinnerController {
 
-        // -------- Tunables (Dashboard) --------
-        public static double kP = 0.0015;
+    // -------- Tunable Gains --------
+    public double kP, kI, kD;
 
-        // Need to tune in lab
-        public static double kI = 0.000001;
-        public static double kD = 0.000015;
+    // Output clamp
+    public double MIN_OUTPUT = -1.0;
+    public double MAX_OUTPUT =  1.0;
 
+    // Integral clamp / deadband
+    public double MAX_INTEGRAL = 0.5;
+    public double ERROR_DEADBAND_RPM = 5.0;
 
-        // We can adjust these values based on if we need to use the max power
-        public static double MIN_OUTPUT = -1.0;
-        public static double MAX_OUTPUT =  1.0;
+    private double integral = 0.0;
+    private double prevError = 0.0;
+    private boolean first = true;
 
-        public static double MAX_INTEGRAL = 0.4; // I saw this online so we keeping it
-        public static double ERROR_TOLERANCE = 1.2; // This term tracks the allowed tolerance in the arm's movement/target pos
-
-
-
-
-        // GoBilda 3.7:1 1620 rmp -> 103.8 PPR -> 415.2 ticks per rev (this is from goBilda)
-        public static double TICKS_PER_REVOLUTION = 415.2;
-
-
-
-        private double integral = 0.0;
-        private double prevError = 0.0;
-        private boolean first = true;
-
-        public void reset() {
-            integral = 0.0;
-            prevError = 0.0;
-            first = true;
-        }
-
-        public double update(double targetRmp, double currentRpm, double dtSeconds){
-            if (dtSeconds<=0){
-                dtSeconds = 1e-3;
-            }
-
-            double error = targetRmp - currentRpm;
-
-            double e;
-            if (Math.abs(error) < ERROR_TOLERANCE) {
-                // If within tolerance, treat as exactly on target
-                e = 0.0;
-            } else {
-                e = error;
-            }
-
-            // Integral with anti-windup limit
-            integral += e * dtSeconds;
-            integral = inRangeArm(integral, -MAX_INTEGRAL, MAX_INTEGRAL);
-
-            // Derivative for error
-            double derivative = first ? 0.0 : (e - prevError) / dtSeconds;
-            prevError = e;
-            first = false;
-
-            // Add all the P I D values for output
-            double pTerm = kP * e;
-            double iTerm = kI * integral;
-            double dTerm = kD * derivative;
-
-            double outputPower = pTerm + iTerm + dTerm;
-
-            // Limit power to motor range
-            outputPower = inRangeArm(outputPower, MIN_OUTPUT, MAX_OUTPUT);
-
-            return outputPower;
-        }
-
-
-        // returns power set to motor based on the parameters
-        public double updateArm(double targetPos, double currentPos, double dtSeconds) {
-            if (dtSeconds <= 0){
-                dtSeconds = 1e-3;
-            }
-
-            // Raw position error
-            double error = targetPos - currentPos;
-
-            // Effective error with tolerance
-            // We use this for calculating power
-            double e;
-            if (Math.abs(error) < ERROR_TOLERANCE) {
-                // If within tolerance, treat as exactly on target
-                e = 0.0;
-            } else {
-                e = error;
-            }
-
-            // Integral with anti-windup limit
-            integral += e * dtSeconds;
-            integral = inRangeArm(integral, -MAX_INTEGRAL, MAX_INTEGRAL);
-
-            // Derivative for error
-            double derivative = first ? 0.0 : (e - prevError) / dtSeconds;
-            prevError = e;
-            first = false;
-
-            // Add all the P I D and F values for output
-            double pTerm = kP * e;
-            double iTerm = kI * integral;
-            double dTerm = kD * derivative;
-
-            double out = pTerm + iTerm + dTerm;
-
-            // Limit power to motor range
-            out = inRangeArm(out, MIN_OUTPUT, MAX_OUTPUT);
-
-            return out;
-        }
-
-        private static double inRangeArm(double v, double lo, double hi) {
-            return Math.max(lo, Math.min(hi, v));
-        }
+    public PIDSpinnerController(double kP, double kI, double kD) {
+        setGains(kP, kI, kD);
     }
+
+    public void setGains(double kP, double kI, double kD) {
+        this.kP = kP;
+        this.kI = kI;
+        this.kD = kD;
+    }
+
+    public void reset() {
+        integral = 0.0;
+        prevError = 0.0;
+        first = true;
+    }
+
+    public double update(double targetRpm, double currentRpm, double dtSeconds) {
+        if (dtSeconds <= 0) dtSeconds = 1e-3;
+
+        double rawError = targetRpm - currentRpm;
+
+        // Apply deadband to avoid twitch near setpoint
+        double e = (Math.abs(rawError) < ERROR_DEADBAND_RPM) ? 0.0 : rawError;
+
+        // Integrate (with clamp)
+        integral += e * dtSeconds;
+        integral = clamp(integral, -MAX_INTEGRAL, MAX_INTEGRAL);
+
+        // Derivative
+        double derivative = first ? 0.0 : (e - prevError) / dtSeconds;
+        prevError = e;
+        first = false;
+
+        // PID only (no feedforward)
+        double pTerm = kP * e;
+        double iTerm = kI * integral;
+        double dTerm = kD * derivative;
+
+        double out = pTerm + iTerm + dTerm;
+
+        // Clamp to motor range
+        out = clamp(out, MIN_OUTPUT, MAX_OUTPUT);
+
+        // Anti-windup bleed
+        if ((out >= MAX_OUTPUT && e > 0) || (out <= MIN_OUTPUT && e < 0)) {
+            integral *= 0.98;
+        }
+
+        return out;
+    }
+
+    private static double clamp(double v, double lo, double hi) {
+        return Math.max(lo, Math.min(hi, v));
+    }
+}

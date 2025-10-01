@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.TrollBot;
 
-/** Simple PID controller (no explicit dt; tuned for ~50Hz loop). */
 public class PIDHeadingController {
     private double kp, ki, kd;
     private double integral;
@@ -27,12 +26,16 @@ public class PIDHeadingController {
         first = true;
     }
 
-    public double update(double setpoint, double measurement) {
-        double error = setpoint - measurement;
+    public double update(double target, double current) {
+        double error = target - current;
 
         integral += error;
-        if (integral > integralMax) integral = integralMax;
-        if (integral < integralMin) integral = integralMin;
+        if (integral > integralMax) {
+            integral = integralMax;
+        }
+        if (integral < integralMin){
+            integral = integralMin;
+        }
 
         double deriv = first ? 0.0 : (error - prevError);
 
