@@ -247,7 +247,9 @@ public final class MecanumDrive {
 
         // I CHANGED THIS
         // localizer = new DriveLocalizer(pose);
-        localizer = new PinpointLocalizer(hardwareMap, 1.27676686438, pose);
+        // Forward Push Test: Inch per Tick = 0.0019467878
+        // Calculated: Inch per Tick = 0.00197899259
+        localizer = new PinpointLocalizer(hardwareMap, 0.0019467878, pose);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }

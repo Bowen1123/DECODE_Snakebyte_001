@@ -14,6 +14,9 @@ public class Teleop_Pinpoint_Pathing extends OpMode {
     @Override
     public void init() {
 
+        // X-axis is moving from alliance to alliance
+        // Y-axis is moving from lanuch point to launch point
+
         Pose2d initialPose;
         initialPose = new Pose2d(11.8, 61.7, Math.toRadians(90));
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
@@ -36,7 +39,7 @@ public class Teleop_Pinpoint_Pathing extends OpMode {
                 .build();
         */
 
-        TrajectoryActionBuilder tab2 = drive.actionBuilder(initialPose)
+        /*TrajectoryActionBuilder tab2 = drive.actionBuilder(initialPose)
                 .lineToY(37)
                 .setTangent(Math.toRadians(0))
                 .lineToX(18)
@@ -48,7 +51,7 @@ public class Teleop_Pinpoint_Pathing extends OpMode {
                 .lineToYSplineHeading(33, Math.toRadians(180))
                 .waitSeconds(2)
                 .strafeTo(new Vector2d(46, 30))
-                .waitSeconds(3);
+                .waitSeconds(3);*/
     }
 
     @Override
