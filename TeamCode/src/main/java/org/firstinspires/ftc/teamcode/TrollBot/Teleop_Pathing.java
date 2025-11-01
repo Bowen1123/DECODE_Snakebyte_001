@@ -34,6 +34,8 @@ public class Teleop_Pathing extends LinearOpMode {
     private AprilTagProcessor aprilTag;
     private Integer detectedId = null;
 
+    private Action defaultPath, GPP_Path, PGP_Path, PPG_Path;
+
     @Override
     public void runOpMode() {
         waitForStart();
@@ -57,14 +59,12 @@ public class Teleop_Pathing extends LinearOpMode {
         visionPortal = builder.build();
 
         // Pathing!
-        Pose2d initialPose = new Pose2d(0, 0, Math.toRadians(0));
+        Pose2d initialPose = new Pose2d(0, 0, Math.toRadians(90));
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
+
+
         while (opModeIsActive()) {
-
-
-            TrajectoryActionBuilder pathGPPBuilt = drive.actionBuilder(initialPose)
-                    .splineToConstantHeading(new Vector2d(35, 35), Math.toRadians(270));
 
             Action pathGPP = drive.actionBuilder(initialPose)
                     .splineToConstantHeading(new Vector2d(35, 35), Math.toRadians(270))
@@ -78,9 +78,6 @@ public class Teleop_Pathing extends LinearOpMode {
                     .splineToConstantHeading(new Vector2d(20, 45), Math.toRadians(270))
                     .build();
 
-            Action pathDefault = drive.actionBuilder(initialPose)
-                    .splineTo(new Vector2d(24, 48), Math.toRadians(0))
-                    .build();
 
 
 
@@ -104,15 +101,20 @@ public class Teleop_Pathing extends LinearOpMode {
             telemetry.addData("Detected ID", detectedId == null ? "NONE (Default)" : detectedId);
 
             if (gamepad1.a) {
-                Actions.runBlocking(pathDefault);
+                Action pathDefault = drive.actionBuilder(initialPose)
+                        .splineTo(new Vector2d(24, 48), Math.toRadians(90))
+                        .build();
 
+                Actions.runBlocking(pathDefault);
+            }
+
+            if (gamepad1.b){
                 Action pathDefault2 = drive.actionBuilder(new Pose2d(drive.localizer.getPose().position.x, drive.localizer.getPose().position.y, Math.toRadians(0)))
                         .setTangent(Math.toRadians(-135))
                         .splineToSplineHeading(new Pose2d(0, 0, Math.toRadians(0)), Math.toRadians(90))
                         .build();
 
                 Actions.runBlocking(pathDefault2);
-
             }
             //else if (detectedId == GPP){
 
@@ -134,4 +136,10 @@ public class Teleop_Pathing extends LinearOpMode {
 
         if (visionPortal != null) visionPortal.close();
     }
+
+    public void generatePathes(){
+
+
+    }
+
 }

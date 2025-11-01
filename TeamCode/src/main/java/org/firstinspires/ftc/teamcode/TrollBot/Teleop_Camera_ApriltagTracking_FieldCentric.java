@@ -22,7 +22,7 @@ import java.util.List;
 @TeleOp(name = "ApriltagTracking_FieldCentric")
 public class Teleop_Camera_ApriltagTracking_FieldCentric extends OpMode {
 
-    public static double SPEED_MULTIPLIER = 0.6;
+    public static double SPEED_MULTIPLIER = 0.9;
 
     public static double TARGET_RANGE = 96.0;
 
@@ -50,15 +50,15 @@ public class Teleop_Camera_ApriltagTracking_FieldCentric extends OpMode {
     @Override
     public void init() {
         // Motors
-        frontLeft  = hardwareMap.get(DcMotor.class, "frontLeft");
-        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
-        backLeft   = hardwareMap.get(DcMotor.class, "backLeft");
-        backRight  = hardwareMap.get(DcMotor.class, "backRight");
+        frontLeft  = hardwareMap.get(DcMotor.class, "leftFront");
+        frontRight = hardwareMap.get(DcMotor.class, "rightFront");
+        backLeft   = hardwareMap.get(DcMotor.class, "leftBack");
+        backRight  = hardwareMap.get(DcMotor.class, "rightBack");
 
-        frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontLeft.setDirection(DcMotorSimple.Direction.FORWARD);
         backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         frontRight.setDirection(DcMotorSimple.Direction.FORWARD);
-        backRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
 
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);

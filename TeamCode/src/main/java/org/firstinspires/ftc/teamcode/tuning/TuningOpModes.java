@@ -187,12 +187,12 @@ public final class TuningOpModes {
                         MecanumDrive.PARAMS.maxProfileAccel,
                         encoderGroups,
                         Arrays.asList(
-                                md.frontLeft,
-                                md.backLeft
+                                md.leftFront,
+                                md.leftBack
                         ),
                         Arrays.asList(
-                                md.frontRight,
-                                md.backRight
+                                md.rightFront,
+                                md.rightBack
                         ),
                         leftEncs,
                         rightEncs,

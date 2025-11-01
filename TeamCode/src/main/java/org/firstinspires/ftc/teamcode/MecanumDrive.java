@@ -62,18 +62,19 @@ public final class MecanumDrive {
                 RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
 
         // drive model parameters
-        public double inPerTick = 0.00202052068;
-        public double lateralInPerTick = 0.0014913684105294985;
-        public double trackWidthTicks = 6404.567023021779;
+        public double inPerTick = 0.00200358976;
+        public double lateralInPerTick = inPerTick;
+        //0.0014913684105294985
+        public double trackWidthTicks = 6366.268257657134; // 6404.567023021779;
 
         // feedforward parameters (in tick units)
-        public double kS = 1.550429106837106;
-        public double kV = 0.0001954096494517022;
-        public double kA = 0.000055;
+        public double kS = 1.3139861808130437;   // 1.550429106837106;
+        public double kV = 0.00028547973994167566;  //0.0001954096494517022;
+        public double kA = 0.000008;   //  0.000055;
 
         // path profile parameters (in inches)
-        public double maxWheelVel = 50;
-        public double minProfileAccel = -30;
+        public double maxWheelVel = 28;
+        public double minProfileAccel = -50;
         public double maxProfileAccel = 50;
 
         // turn profile parameters (in radians)
@@ -81,13 +82,13 @@ public final class MecanumDrive {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 3;
-        public double lateralGain = 6;
-        public double headingGain = 8; // shared with turn
+        public double axialGain = 0; //3;
+        public double lateralGain = 0;  //6;
+        public double headingGain = 0;  //8; // shared with turn
 
         public double axialVelGain = 0.0;
-        public double lateralVelGain = 1;
-        public double headingVelGain = 0.75; // shared with turn
+        public double lateralVelGain = 0; //1;
+        public double headingVelGain = 0;    //0.75; // shared with turn
     }
 
     public static Params PARAMS = new Params();
@@ -236,7 +237,8 @@ public final class MecanumDrive {
         // TODO: reverse motor directions if needed
         leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
         leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
@@ -246,6 +248,8 @@ public final class MecanumDrive {
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         localizer = new PinpointLocalizer(hardwareMap, PARAMS.inPerTick, pose);
+
+
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
