@@ -1,21 +1,23 @@
 package org.firstinspires.ftc.teamcode.Competition;
 
+import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
+import com.acmerobotics.roadrunner.Vector2d;
+import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Gamepad;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp
-public class Teleop extends LinearOpMode {
+public class Auto_Pathing extends LinearOpMode {
     private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake;
     private Servo ramp;
     private IMU imu;
@@ -26,57 +28,22 @@ public class Teleop extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        waitForStart();
+
         initialize();
+        Pose2d initialPose = new Pose2d(0, 0, Math.toRadians(90));
+        MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
-        ElapsedTime timer = new ElapsedTime();
+        TrajectoryActionBuilder defaultPath = drive.actionBuilder(initialPose)
+                .splineToConstantHeading(new Vector2d(35, 35), Math.toRadians(270));
 
-        double shooterPower = 0.1;
-        double intakePower = 0.75;
-        double transferPower = .69 ;
-        double shooterSpeed = 100;
 
-        while (opModeIsActive()){
+        waitForStart();
+        while(opModeIsActive()){
 
-            /// ----------------- Mechanism Controls -----------------
-            if (gamepad1.a && !pastA && shooterPower > 0){
-                shooterPower -= .1;
-            }
-            if (gamepad1.b && !pastB && shooterPower < 1){
-                shooterPower += .1;
+            if (gamepad1.a && !pastA){
+                Actions.runBlocking(defaultPath.build());
             }
 
-            if (gamepad1.x & gamepad1.y){
-                shooter.setPower(0.1);
-            } else if (gamepad1.x){
-                shooter.setPower(1);
-            } else if (gamepad1.y){
-                shooter.setPower(0);
-            }
-
-
-
-            if (gamepad1.right_bumper){
-                intake.setPower(intakePower);
-                //transfer.setPower(transferPower);
-            } else if (gamepad1.left_bumper){
-                intake.setPower(- intakePower / 2);
-                //transfer.setPower(- transferPower / 2);
-            } else {
-                intake.setPower(0);
-                //transfer.setPower(0);
-            }
-
-            if (gamepad1.right_trigger > 0.2){
-                transfer.setPower(gamepad1.right_trigger);
-            } else if (gamepad1.left_trigger > 0.2){
-                transfer.setPower(-transferPower / 2);
-            } else {
-                transfer.setPower(0);
-            }
-
-
-            /// ----------------- Field-Centric Drive -----------------
             double driveForward = -gamepad1.left_stick_y;  // forward/back
             double strafe =  -gamepad1.left_stick_x;  // left/right
             double driveTurn = -gamepad1.right_stick_x; // ccw/cw
@@ -92,24 +59,12 @@ public class Teleop extends LinearOpMode {
             yPower = robotY;
             xPower = robotX;
             moveRobot(xPower, yPower, driveTurn);
-
-            /// ----------------- Update Previous Gamepads -----------------
             pastA = gamepad1.a;
             pastB = gamepad1.b;
 
-            /// ----------------- Update Telemetry -----------------
-            telemetry.addLine("Shooter Power: " + shooterPower);
-            telemetry.addLine("Intake Power: " + intakePower);
-            telemetry.addLine("Transfer Power: " + transferPower);
-            telemetry.addLine("\n\nHeading: " + imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
-            telemetry.update();
-
-
         }
     }
-    private double getHeadingDeg() {
-        return imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-    }
+
     private void moveRobot(double x, double y, double yaw) {
         double fl =  y - x - yaw;
         double fr =  y + x + yaw;
@@ -142,7 +97,7 @@ public class Teleop extends LinearOpMode {
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //transfer.setDirection(DcMotorSimple.Direction.REVERSE);
-        // shooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        //shooter.setDirection(DcMotorSimple.Direction.REVERSE);
         leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
         leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
 
