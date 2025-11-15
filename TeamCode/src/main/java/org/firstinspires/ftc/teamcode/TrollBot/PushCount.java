@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Competition;
+package org.firstinspires.ftc.teamcode.TrollBot;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
@@ -19,7 +19,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp
-public class Teleop extends LinearOpMode {
+public class PushCount extends LinearOpMode {
     private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake;
     private Servo ramp;
     private IMU imu;
@@ -41,92 +41,11 @@ public class Teleop extends LinearOpMode {
         double intakePower = 0.85;
         double transferPower = .85;
         double shooterSpeed = 100;
-
+        double lfE = 0;
         while (opModeIsActive()){
-
-            /// ----------------- Mechanism Controls -----------------
-            if (gamepad2.a && !pastA && shooterPower > 0){
-                shooterPower -= .1;
-            }
-            if (gamepad2.b && !pastB && shooterPower < 1){
-                shooterPower += .1;
-            }
-
-            if (gamepad2.x & gamepad2.y){
-                shooter.setPower(0.1);
-            } else if (gamepad2.x){
-                shooter.setPower(1);
-            } else if (gamepad2.y){
-                shooter.setPower(0);
-            }
-
-
-
-            if (gamepad2.right_bumper || gamepad1.right_bumper){
-                intake.setPower(intakePower);
-                //transfer.setPower(transferPower);
-            } else if (gamepad2.left_bumper || gamepad1.left_bumper){
-                intake.setPower(- intakePower / 2);
-                //transfer.setPower(- transferPower / 2);
-            } else {
-                intake.setPower(0);
-                //transfer.setPower(0);
-            }
-
-            if (gamepad2.right_trigger > 0.1){
-                transfer.setPower(gamepad2.right_trigger);
-            } else if (gamepad2.left_trigger > 0.1){
-                transfer.setPower(-transferPower / 2);
-            } else {
-                transfer.setPower(0);
-            }
-
-
-            /// ----------------- Field-Centric Drive -----------------
-            /*double driveForward = -gamepad1.left_stick_y;  // forward/back
-            double strafe =  -gamepad1.left_stick_x;  // left/right
-            double driveTurn; // ccw/cw
-            if (Math.abs(gamepad1.left_stick_x) < Math.abs(gamepad2.left_stick_x) && Math.abs(gamepad2.left_stick_x) > 0.1){
-                driveTurn = -gamepad2.right_stick_x;
-            } else {
-                driveTurn = -gamepad1.right_stick_x;
-            }
-
-
-
-            double xPower, yPower;
-            double headingRad = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
-
-            double fieldY = driveForward;
-            double fieldX = strafe;
-            double robotY =  fieldY * Math.cos(headingRad) + fieldX * Math.sin(headingRad);
-            double robotX = -fieldY * Math.sin(headingRad) + fieldX * Math.cos(headingRad);
-
-            yPower = robotY;
-            xPower = robotX;
-            moveRobot(xPower, yPower, driveTurn);*/
-            drive.setDrivePowers(new PoseVelocity2d(
-                    new Vector2d(
-                            -gamepad1.left_stick_y,
-                            -gamepad1.left_stick_x
-                    ),
-                    -gamepad1.right_stick_x
-            ));
-
-
-
-            /// ----------------- Update Previous Gamepads -----------------
-            pastA = gamepad2.a;
-            pastB = gamepad2.b;
-
-            /// ----------------- Update Telemetry -----------------
-            telemetry.addLine("Shooter Power: " + shooterPower);
-            telemetry.addLine("Intake Power: " + intakePower);
-            telemetry.addLine("Transfer Power: " + transferPower);
-            telemetry.addLine("\n\nHeading: " + imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
+            lfE = leftFront.getCurrentPosition();
+            telemetry.addData("Test", lfE);
             telemetry.update();
-
-
         }
     }
     private double getHeadingDeg() {
@@ -158,17 +77,16 @@ public class Teleop extends LinearOpMode {
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
 
-        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
 
         //transfer.setDirection(DcMotorSimple.Direction.REVERSE);
         // shooter.setDirection(DcMotorSimple.Direction.REVERSE);
         leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
         leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-
+        leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
 
         imu = hardwareMap.get(IMU.class, "imu");
         IMU.Parameters params = new IMU.Parameters(
