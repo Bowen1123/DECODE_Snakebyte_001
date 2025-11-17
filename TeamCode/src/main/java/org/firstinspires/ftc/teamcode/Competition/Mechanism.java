@@ -25,6 +25,7 @@ public class Mechanism {
     public Action intakeOut() { return new IntakeOut(); }
     public Action transferIn() { return new TransferIn(); }
     public Action transferSlow() { return new TransferSlow(); }
+    public Action transferSlowest() { return new TransferSlowest(); }
     public Action transferOut() { return new TransferOut(); }
     public Action powerDown() { return new PowerDown(); }
     public Action shooterStop() {return new ShooterStop(); }
@@ -120,6 +121,14 @@ public class Mechanism {
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
             transfer.setPower(.45);
+            return false;
+        }
+    }
+    public class TransferSlowest implements Action {
+
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            transfer.setPower(.22);
             return false;
         }
     }

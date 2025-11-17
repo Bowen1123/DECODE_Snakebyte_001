@@ -43,11 +43,11 @@ public class Red_Goal extends LinearOpMode {
                 .splineToConstantHeading(new Vector2d(18, -12), Math.toRadians(315));
 
         TrajectoryActionBuilder backUp = drive.actionBuilder(initialPose)
-                .lineToX(-20);
+                .lineToX(-22);
 
         TrajectoryActionBuilder leave = drive.actionBuilder(new Pose2d(-20, 20, Math.toRadians(-45)))
                 .turn(Math.toRadians(-135))
-                .lineToX(-44);
+                .lineToX(-50);
         // .splineTo(new Vector2d(-24, 24), Math.toRadians(90));
 
         TrajectoryActionBuilder spike1 = drive.actionBuilder(new Pose2d(-44, 20, Math.toRadians(-180)))
@@ -75,10 +75,10 @@ public class Red_Goal extends LinearOpMode {
                 new SleepAction(.5),
                 ///mechanism.intakeStop(),
                 mechanism.transferOut(),
-                new SleepAction(.3),
+                new SleepAction(.6),
                 mechanism.transferIn(),
                 //mechanism.transferSlow(),
-                new SleepAction(1.2),
+                new SleepAction(2),
 
                 mechanism.powerDown(),
                 leave.build(),

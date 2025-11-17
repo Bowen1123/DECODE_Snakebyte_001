@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Competition.Autonomous;
 
 import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
@@ -43,17 +44,19 @@ public class Blue_Goal extends LinearOpMode {
                 .splineToConstantHeading(new Vector2d(18, -12), Math.toRadians(315));
 
         TrajectoryActionBuilder backUp = drive.actionBuilder(initialPose)
-                .lineToX(-20);
+                .lineToX(-22);
 
         TrajectoryActionBuilder leave = drive.actionBuilder(new Pose2d(-20, -20, Math.toRadians(45)))
                 .turn(Math.toRadians(135))
-                .lineToX(-44);
+                .lineToX(0);
         // .splineTo(new Vector2d(-24, 24), Math.toRadians(90));
 
         TrajectoryActionBuilder spike1 = drive.actionBuilder(new Pose2d(-44, 20, Math.toRadians(180)))
-                .turn(Math.toRadians(90))
-                .lineToY(16);
+                .turn(Math.toRadians(-90))
+                .lineToY(8);
 
+        TrajectoryActionBuilder goShoot = drive.actionBuilder(new Pose2d(-44, 20, Math.toRadians(90)))
+                        .splineTo(new Vector2d(-20, -20), Math.toRadians(45));
 
         waitForStart();
 
@@ -73,18 +76,25 @@ public class Blue_Goal extends LinearOpMode {
 
                 mechanism.intakeIn(),
                 new SleepAction(.5),
-                ///mechanism.intakeStop(),
                 mechanism.transferOut(),
-                new SleepAction(.3),
+                new SleepAction(.5),
                 mechanism.transferIn(),
                 //mechanism.transferSlow(),
-                new SleepAction(1.2),
+                new SleepAction(2),
 
                 mechanism.powerDown(),
                 leave.build(),
-                new SleepAction(.5),
 
-                ///mechanism.intakeIn(),
+
+//                new ParallelAction(
+//                        mechanism.intakeIn(),
+//                        mechanism.transferSlowest(),
+//                        spike1.build()
+//                ),
+//                mechanism.transferStop(),
+//                mechanism.intakeStop(),
+//                mechanism.shooterPowerUp(),
+//                goShoot.build(),
 
 
                 new SleepAction(30)

@@ -21,7 +21,7 @@ import org.firstinspires.ftc.teamcode.Competition.Mechanism;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
-public class Red_Far_Zone extends LinearOpMode {
+public class Delete_30030 extends LinearOpMode {
     private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake;
     private Servo ramp;
     private IMU imu;
@@ -29,6 +29,7 @@ public class Red_Far_Zone extends LinearOpMode {
     private double RAMP_EXTEND_LIMIT, RAMP_RETRACT_LIMIT;
 
     private boolean pastA = false, pastB = false;
+
     @Override
     public void runOpMode() throws InterruptedException {
 
