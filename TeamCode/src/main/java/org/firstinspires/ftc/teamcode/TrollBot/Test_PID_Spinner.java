@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name = "Teleop_PID_Spinner", group = "TrollBot")
 @Config
-public class Teleop_PID_Spinner extends OpMode {
+public class Test_PID_Spinner extends OpMode {
 
     // ---------- Hardware ----------
     public static String MOTOR_NAME = "spinner";
@@ -40,7 +40,7 @@ public class Teleop_PID_Spinner extends OpMode {
     private boolean lastB = false;
     private boolean lastDpadUp = false, lastDpadDown = false, lastDpadLeft = false, lastDpadRight = false;
 
-    private PIDSpinnerController controller;
+    private PID_SpinnerController_Basic controller;
 
     @Override
     public void init() {
@@ -49,7 +49,7 @@ public class Teleop_PID_Spinner extends OpMode {
         spinner.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         spinner.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        controller = new PIDSpinnerController(kP, kI, kD);
+        controller = new PID_SpinnerController_Basic(kP, kI, kD);
         controller.MIN_OUTPUT = MIN_OUTPUT;
         controller.MAX_OUTPUT = MAX_OUTPUT;
         controller.MAX_INTEGRAL = MAX_INTEGRAL;

@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.TrollBot;
 import com.acmerobotics.dashboard.config.Config;
 
 @Config
-public class PIDSpinnerController {
+public class PID_SpinnerController_Basic {
 
     // -------- Tunable Gains --------
     public double kP, kI, kD;
@@ -20,7 +20,7 @@ public class PIDSpinnerController {
     private double prevError = 0.0;
     private boolean first = true;
 
-    public PIDSpinnerController(double kP, double kI, double kD) {
+    public PID_SpinnerController_Basic(double kP, double kI, double kD) {
         setGains(kP, kI, kD);
     }
 

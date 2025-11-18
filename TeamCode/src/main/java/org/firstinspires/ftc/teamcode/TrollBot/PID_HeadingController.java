@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.TrollBot;
 
-public class PIDHeadingController {
+public class PID_HeadingController {
     private double kp, ki, kd;
     private double integral;
     private double prevError;
@@ -8,7 +8,7 @@ public class PIDHeadingController {
 
     private double integralMin = -1e6, integralMax = 1e6;
 
-    public PIDHeadingController(double kp, double ki, double kd) {
+    public PID_HeadingController(double kp, double ki, double kd) {
         setGains(kp, ki, kd);
     }
 

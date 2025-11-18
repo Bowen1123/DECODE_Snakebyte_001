@@ -12,7 +12,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 
 @Config
-public class PIDFArmController {
+public class PIDF_ArmController {
 
     // -------- Tunables (Dashboard) --------
     public static double kP = 0.0015;

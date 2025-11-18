@@ -9,10 +9,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 
 @TeleOp(name="Teleop_PIDF_Arm")
-public class Teleop_PIDF_Arm extends OpMode {
+public class Test_PIDF_Arm extends OpMode {
 
     private DcMotor arm;
-    private PIDFArmController controller;
+    private PIDF_ArmController controller;
     private FtcDashboard dashboard;
 
     private double targetTicks = 0;
@@ -28,7 +28,7 @@ public class Teleop_PIDF_Arm extends OpMode {
         arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        controller = new PIDFArmController();
+        controller = new PIDF_ArmController();
         dashboard = FtcDashboard.getInstance();
     }
 
@@ -73,10 +73,10 @@ public class Teleop_PIDF_Arm extends OpMode {
         pkt.put("pos", pos);
         pkt.put("error", targetTicks - pos);
         pkt.put("power", power);
-        pkt.put("kP", PIDFArmController.kP);
-        pkt.put("kI", PIDFArmController.kI);
-        pkt.put("kD", PIDFArmController.kD);
-        pkt.put("kF", PIDFArmController.kF);
+        pkt.put("kP", PIDF_ArmController.kP);
+        pkt.put("kI", PIDF_ArmController.kI);
+        pkt.put("kD", PIDF_ArmController.kD);
+        pkt.put("kF", PIDF_ArmController.kF);
         dashboard.sendTelemetryPacket(pkt);
     }
 }

@@ -38,7 +38,7 @@ public class Teleop_Camera_ApriltagTracking extends OpMode {
 
     // ----------- Heading PID (degrees) -----------
     // Bearing from ftcPose is in degrees; we keep PID in degrees for clarity.
-    private final PIDHeadingController headingPid = new PIDHeadingController(0.020, 0.000, 0.001); // tune!
+    private final PID_HeadingController headingPid = new PID_HeadingController(0.020, 0.000, 0.001); // tune!
     private double lastPidTurn = 0.0;
 
     // Optional caps

@@ -44,7 +44,7 @@ public class Teleop_Camera_ApriltagTracking_FieldCentric extends OpMode {
     private AprilTagProcessor aprilTag;
     private AprilTagDetection desiredTag;
 
-    private final PIDHeadingController headingPid = new PIDHeadingController(0.020, 0.000, 0.001);
+    private final PID_HeadingController headingPid = new PID_HeadingController(0.020, 0.000, 0.001);
     private double lastPidTurn = 0.0;
 
     @Override
