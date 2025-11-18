@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
+import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
@@ -33,124 +34,175 @@ public class Blue_Goal extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+        Pose2d initialPose = new Pose2d(-52,-52,Math.toRadians(225));
 
-        initialize();
-        Pose2d initialPose = new Pose2d(0, 0, Math.toRadians(45));
+        Pose2d shootPose = new Pose2d(-24,-24,Math.toRadians(225));
+        Pose2d prespike1 = new Pose2d(-12,-28, Math.toRadians(270));
+        Pose2d postspike1 = new Pose2d(-12,-52, Math.toRadians(270));
+        Pose2d prespike2 = new Pose2d(12,-28, Math.toRadians(270));
+        Pose2d postspike2 = new Pose2d(12,-52, Math.toRadians(270));
+        Pose2d prespike3 = new Pose2d(36,-28, Math.toRadians(270));
+        Pose2d postspike3 = new Pose2d(36,-28, Math.toRadians(270));
+
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
         Mechanism mechanism = new Mechanism(hardwareMap);
 
-        TrajectoryActionBuilder defaultPath = drive.actionBuilder(initialPose)
-                .splineToConstantHeading(new Vector2d(18, -12), Math.toRadians(315));
-
         TrajectoryActionBuilder backUp = drive.actionBuilder(initialPose)
-                .lineToX(-22);
+                .lineToX(-24);
 
-        TrajectoryActionBuilder leave = drive.actionBuilder(new Pose2d(-20, -20, Math.toRadians(45)))
-                .turn(Math.toRadians(135))
-                .lineToX(0);
-        // .splineTo(new Vector2d(-24, 24), Math.toRadians(90));
+        TrajectoryActionBuilder toSpike1 = drive.actionBuilder(shootPose)
+                .setTangent(Math.toRadians(45))
+                .splineToLinearHeading(new Pose2d(-12, -28, Math.toRadians(270)), Math.toRadians(0));
 
-        TrajectoryActionBuilder spike1 = drive.actionBuilder(new Pose2d(-44, 20, Math.toRadians(180)))
-                .turn(Math.toRadians(-90))
-                .lineToY(8);
+        TrajectoryActionBuilder forwardSpike1 = drive.actionBuilder(prespike1)
+                .setTangent(Math.toRadians(90))
+                .lineToY(-52, new TranslationalVelConstraint(14));
 
-        TrajectoryActionBuilder goShoot = drive.actionBuilder(new Pose2d(-44, 20, Math.toRadians(90)))
-                        .splineTo(new Vector2d(-20, -20), Math.toRadians(45));
+        TrajectoryActionBuilder fromSpike1 = drive.actionBuilder(postspike1)
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-24,-24, Math.toRadians(225)), Math.toRadians(180), new TranslationalVelConstraint(44));
+
+        TrajectoryActionBuilder toSpike2 = drive.actionBuilder(shootPose)
+                .setTangent(Math.toRadians(45))
+                .splineToLinearHeading(new Pose2d(12, -28, Math.toRadians(270)), Math.toRadians(0));
+
+        TrajectoryActionBuilder forwardSpike2 = drive.actionBuilder(prespike2)
+                .setTangent(Math.toRadians(90))
+                .lineToY(-52, new TranslationalVelConstraint(14));
+
+        TrajectoryActionBuilder fromSpike2 = drive.actionBuilder(postspike2)
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-24,-24, Math.toRadians(225)), Math.toRadians(180), new TranslationalVelConstraint(44));
+
+        TrajectoryActionBuilder toSpike3 = drive.actionBuilder(shootPose)
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(36, -28, Math.toRadians(270)), Math.toRadians(0));
+
+
+        TrajectoryActionBuilder forwardSpike3 = drive.actionBuilder(prespike3)
+                .setTangent(Math.toRadians(90))
+                .lineToY(-52, new TranslationalVelConstraint(14));
+
+        TrajectoryActionBuilder fromSpike3 = drive.actionBuilder(postspike3)
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-24,-24, Math.toRadians(225)), Math.toRadians(180), new TranslationalVelConstraint(44));
+
+        TrajectoryActionBuilder leave = drive.actionBuilder(shootPose)
+                .splineToConstantHeading(new Vector2d(-60, 24), Math.toRadians(225));
+
+
+        SequentialAction shoot_sequence = new SequentialAction(
+                mechanism.intakeSlow(),
+                mechanism.transferIn(),
+                new SleepAction(.5),
+
+                mechanism.transferOut(),
+                new SleepAction(.7),
+                mechanism.transferIn(),
+                new SleepAction(.7),
+
+                mechanism.transferOut(),
+                new SleepAction(.8),
+                mechanism.transferInFinal(),
+                new SleepAction(.8)
+        );
+
+        Action intake = mechanism.intakeIn();
 
         waitForStart();
 
         Actions.runBlocking(new SequentialAction(
-                mechanism.shooterPowerUp(),
-                backUp.build(),
-                new SleepAction(1.4),
-                mechanism.transferSlow(),
-                new SleepAction(2),
+                new ParallelAction(
+                        backUp.build(),
+                        mechanism.shooterPowerUp()),
+                shoot_sequence,
+                mechanism.powerDown(),
 
-                //mechanism.transferStop(),
-                mechanism.intakeIn(),
-                new SleepAction(.5),
-                mechanism.intakeStop(),
-                mechanism.transferSlow(),
-                new SleepAction(2),
 
-                mechanism.intakeIn(),
-                new SleepAction(.5),
-                mechanism.transferOut(),
-                new SleepAction(.5),
+                toSpike1.build(),
+                intake, mechanism.transferSlowest(),
+                forwardSpike1.build(),
+                mechanism.powerDownIntake(),
+
+                new ParallelAction(
+                        fromSpike1.build(),
+                        mechanism.shooterPowerUp()),
+
+                /// SHOOT SEQUENCE ///
+                mechanism.intakeSlow(),
                 mechanism.transferIn(),
-                //mechanism.transferSlow(),
-                new SleepAction(2),
+                new SleepAction(.5),
+
+                mechanism.transferOut(),
+                new SleepAction(.7),
+                mechanism.transferIn(),
+                new SleepAction(.7),
+
+                mechanism.transferOut(),
+                new SleepAction(.8),
+                mechanism.transferInFinal(),
+                new SleepAction(.8),
+                /// SHOOT SEQUENCE END ///
 
                 mechanism.powerDown(),
+
+                toSpike2.build(),
+                intake, mechanism.transferSlowest(),
+                forwardSpike2.build(),
+                mechanism.powerDownIntake(),
+
+                new ParallelAction(
+                        fromSpike2.build(),
+                        mechanism.shooterPowerUp()),
+
+                /// SHOOT SEQUENCE ///
+                mechanism.intakeSlow(),
+                mechanism.transferIn(),
+                new SleepAction(.5),
+
+                mechanism.transferOut(),
+                new SleepAction(.7),
+                mechanism.transferIn(),
+                new SleepAction(.7),
+
+                mechanism.transferOut(),
+                new SleepAction(.8),
+                /// SHOOT SEQUENCE END ///
+
+                mechanism.powerDown(),
+
+
+                toSpike3.build(),
+                intake, mechanism.transferSlowest(),
+                forwardSpike3.build(),
+                mechanism.powerDownIntake(),
+
+                new ParallelAction(
+                        fromSpike3.build(),
+                        mechanism.shooterPowerUp()),
+
+                /// SHOOT SEQUENCE ///
+                mechanism.intakeSlow(),
+                mechanism.transferIn(),
+                new SleepAction(.5),
+
+                mechanism.transferOut(),
+                new SleepAction(.7),
+                mechanism.transferIn(),
+                new SleepAction(.7),
+
+                mechanism.transferOut(),
+                new SleepAction(.8),
+                /// SHOOT SEQUENCE END ///
+
+                mechanism.powerDown(),
+
                 leave.build(),
-
-
-//                new ParallelAction(
-//                        mechanism.intakeIn(),
-//                        mechanism.transferSlowest(),
-//                        spike1.build()
-//                ),
-//                mechanism.transferStop(),
-//                mechanism.intakeStop(),
-//                mechanism.shooterPowerUp(),
-//                goShoot.build(),
-
 
                 new SleepAction(30)
         ));
 
-
-
-    }
-
-    private void moveRobot(double x, double y, double yaw) {
-        double fl =  y - x - yaw;
-        double fr =  y + x + yaw;
-        double bl =  y + x - yaw;
-        double br =  y - x + yaw;
-
-        double max = Math.max(Math.max(Math.abs(fl), Math.abs(fr)),
-                Math.max(Math.abs(bl), Math.abs(br)));
-        if (max > 1.0) {
-            fl /= max; fr /= max; bl /= max; br /= max;
-        }
-
-        leftFront.setPower(fl * SPEED_MULTIPLIER);
-        rightFront.setPower(fr * SPEED_MULTIPLIER);
-        leftBack.setPower(bl * SPEED_MULTIPLIER);
-        rightBack.setPower(br * SPEED_MULTIPLIER);
-    }
-    private void initialize(){
-        leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
-        leftBack = hardwareMap.get(DcMotorEx.class, "leftBack");
-        rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
-        rightBack = hardwareMap.get(DcMotorEx.class, "rightBack");
-        transfer = hardwareMap.get(DcMotorEx.class, "transfer");
-        shooter = hardwareMap.get(DcMotorEx.class, "shooter");
-        intake = hardwareMap.get(DcMotorEx.class, "intake");
-
-        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        //transfer.setDirection(DcMotorSimple.Direction.REVERSE);
-        //shooter.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        imu = hardwareMap.get(IMU.class, "imu");
-        IMU.Parameters params = new IMU.Parameters(
-                new RevHubOrientationOnRobot(
-                        RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                        RevHubOrientationOnRobot.UsbFacingDirection.LEFT
-                )
-        );
-        imu.initialize(params);
-        imu.resetYaw();
 
 
     }

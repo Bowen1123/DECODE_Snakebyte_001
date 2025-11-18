@@ -22,12 +22,16 @@ public class Mechanism {
     public Action shooterPowerUp() { return new ShooterPowerUp(); }
     public Action shooterPowerDown() { return  new ShooterPowerDown(); }
     public Action intakeIn() { return new IntakeIn(); }
+    public Action intakeSlow() {return new IntakeSlow(); }
     public Action intakeOut() { return new IntakeOut(); }
     public Action transferIn() { return new TransferIn(); }
+    public Action transferInFinal() { return new TransferInFinal(); }
+
     public Action transferSlow() { return new TransferSlow(); }
     public Action transferSlowest() { return new TransferSlowest(); }
     public Action transferOut() { return new TransferOut(); }
     public Action powerDown() { return new PowerDown(); }
+    public Action powerDownIntake() {return new PowerDownIntake(); }
     public Action shooterStop() {return new ShooterStop(); }
     public Action intakeStop() {return new IntakeStop(); }
     public Action transferStop() {return new TransferStop(); }
@@ -71,6 +75,16 @@ public class Mechanism {
             return false;
         }
     }
+
+    public class PowerDownIntake implements  Action{
+
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            transfer.setPower(0);
+            intake.setPower(0);
+            return false;
+        }
+    }
     public class ShooterPowerUp implements Action {
 
         @Override
@@ -97,11 +111,20 @@ public class Mechanism {
             return false;
         }
     }
+
+    public class IntakeSlow implements Action {
+
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            intake.setPower(.45);
+            return false;
+        }
+    }
     public class IntakeOut implements Action {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            intake.setPower(-.5);
+            intake.setPower(-.6);
             return false;
         }
     }
@@ -111,10 +134,22 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(.8);
+            transfer.setPower(.9);
             return false;
         }
     }
+
+    public class TransferInFinal implements Action {
+
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            transfer.setPower(1);
+            return false;
+        }
+    }
+
+
+
 
     public class TransferSlow implements Action {
 
@@ -128,7 +163,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(.22);
+            transfer.setPower(.15);
             return false;
         }
     }
@@ -136,7 +171,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(-.5);
+            transfer.setPower(-.55);
             return false;
         }
     }
