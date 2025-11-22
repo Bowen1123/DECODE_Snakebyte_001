@@ -1,82 +1,146 @@
 package org.firstinspires.ftc.teamcode.TrollBot;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-@TeleOp
+import java.util.List;
+
+@TeleOp(name = "Test_PIDF_SpinnerController")
+@Config
 public class Test_PIDF_SpinnerController extends LinearOpMode {
 
-    public static class Params{
-        public double kP = 0;
-        public double kI = 0;
-        public double kD = 0;
-        public double kF = 0;
-    }
+    public static double INITIAL_TARGET_RPM = 4000;
 
-    private static final double TICKS_PER_REV = 28.0; // 6000 RPM
+    private PIDF_SpinnerController shooterController;
+
+    private boolean pastA = false;
+    private boolean pastY = false;
+    private boolean usingCamera = false, pastBumper = false;
+
+
+    /// With Camera Code ///
+    public static int DESIRED_TAG_ID = 21; // <-- set the only tag to lock onto
+    private VisionPortal visionPortal;
+    private AprilTagProcessor aprilTag;
+    private AprilTagDetection desiredTag;
+
 
     @Override
     public void runOpMode() throws InterruptedException {
+        // Hardware
         DcMotorEx spinner = hardwareMap.get(DcMotorEx.class, "spinner");
+        spinner.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        spinner.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        spinner.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
-        PIDF_SpinnerController rpmController = new PIDF_SpinnerController(
-                0.02,  // kP
-                0.0,    // kI
-                0.0,    // kD
-                0.0005  // kF (starting guess)
-        );
-        rpmController.setIntegralLimit(500); // prevent crazy windup
+        shooterController = new PIDF_SpinnerController(spinner);
+        shooterController.setTargetRpm(INITIAL_TARGET_RPM);
 
-        // Example: start with 1000 RPM target
-        double targetRpm = 1000.0;
-        rpmController.setTargetRpm(targetRpm);
+        Telemetry dashboardTelemetry = FtcDashboard.getInstance().getTelemetry();
+        telemetry = new MultipleTelemetry(telemetry, dashboardTelemetry);
 
-        ElapsedTime runtime = new ElapsedTime();
+        telemetry.addLine("Shooter PIDF Test");
+        telemetry.addLine("Use A/Y to adjust target RPM.");
+        telemetry.update();
+
+        initAprilTag();
+
+        boolean targetFound = false;
 
         waitForStart();
-        runtime.reset();
-        rpmController.reset();
-
-        boolean prevY = false, prevA = false;
-
         while (opModeIsActive()) {
-            double timeS = runtime.seconds();
+            // ----- Input: edge-detect A/Y for one-step changes -----
+            boolean a = gamepad1.a;
+            boolean y = gamepad1.y;
+            boolean bumpers = gamepad1.right_bumper || gamepad1.left_bumper;
 
-            // Read current motor speed in ticks/sec and convert to RPM
-            double ticksPerSec = spinner.getVelocity(); // by default, ticks/second
-            double currentRpm = (ticksPerSec / TICKS_PER_REV) * 60.0;
-
-            // Update controller
-            double power = rpmController.update(currentRpm, timeS);
-
-            // Clip power to valid range
-            power = Math.max(-1.0, Math.min(1.0, power));
-            spinner.setPower(power);
-
-            // spinner.setPower(.2);
-
-            if (gamepad1.y && !prevY) {
-                targetRpm += 50;
-                rpmController.setTargetRpm(targetRpm);
-            } else if (gamepad1.a && !prevA) {
-                targetRpm -= 50;
-                if (targetRpm < 0) targetRpm = 0;
-                rpmController.setTargetRpm(targetRpm);
+            // A pressed: increase target RPM
+            if (y && !pastY) {
+                shooterController.setTargetRpm(
+                        shooterController.getTargetRpm() + PIDF_SpinnerController.RPM_STEP
+                );
             }
 
-            prevY = gamepad1.y;
-            prevA = gamepad1.a;
+            // Y pressed: decrease target RPM
+            if (a && !pastA) {
+                shooterController.setTargetRpm(
+                        shooterController.getTargetRpm() - PIDF_SpinnerController.RPM_STEP
+                );
+            }
 
-            telemetry.addData("Target RPM", targetRpm);
-            telemetry.addData("Current RPM", currentRpm);
-            telemetry.addData("Power", power);
+            pastA = a;
+            pastY = y;
+            pastBumper = bumpers;
+
+            // ----- Update controller -----
+            double currentPower = shooterController.update();
+            spinner.setPower(currentPower);
+
+
+
+
+            List<AprilTagDetection> detections = aprilTag.getDetections();
+            for (AprilTagDetection d : detections) {
+                if (d.metadata != null && d.id == DESIRED_TAG_ID) {
+                    desiredTag = d;
+                    targetFound = true;
+                    break;
+                }
+            }
+
+            /*if (targetFound && usingCamera){
+                spinner.setPower(currentPower);
+                telemetry.addData("it spins", "");
+            } else {
+                telemetry.addData("Nothing", "");
+                spinner.setPower(0);
+            }*/
+
+
+            // ----- Telemetry -----
+            telemetry.addData("Target RPM", shooterController.getTargetRpm());
+            telemetry.addData("Current RPM", shooterController.getCurrentRpm());
+            telemetry.addData("Raw encoder pos", shooterController.getMotor().getCurrentPosition());
+
+            telemetry.addData("Power", currentPower);
+            telemetry.addData("At Target (±%.0f RPM)", PIDF_SpinnerController.RPM_TOLERANCE);
+            telemetry.addData("At Target?", shooterController.isAtTarget());
+            telemetry.addData("List",detections.toString()); 
             telemetry.update();
+        }
+    }
+
+
+    private void initAprilTag() {
+        aprilTag = new AprilTagProcessor.Builder()
+                .setDrawAxes(true)
+                .setDrawCubeProjection(false)
+                .setDrawTagID(true)
+                // You can tweak decimation for range vs FPS
+                .build();
+        aprilTag.setDecimation(2);
+
+        if (usingCamera) {
+            visionPortal = new VisionPortal.Builder()
+                    .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                    .addProcessor(aprilTag)
+                    .build();
+        } else {
+            visionPortal = new VisionPortal.Builder()
+                    .setCamera(BuiltinCameraDirection.BACK)
+                    .addProcessor(aprilTag)
+                    .build();
         }
     }
 }
