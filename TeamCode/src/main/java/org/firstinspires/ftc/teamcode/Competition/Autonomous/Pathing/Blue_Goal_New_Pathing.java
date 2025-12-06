@@ -26,7 +26,7 @@ public class Blue_Goal_New_Pathing extends LinearOpMode {
 
 
         VelConstraint baseVelConstraint = (robotPose, _path, _disp) -> {
-            if (robotPose.position.y.value() < 40.0) {
+            if (robotPose.position.y.value() < -34.0) {
                 return 20.0;
             } else {
                 return 50.0;

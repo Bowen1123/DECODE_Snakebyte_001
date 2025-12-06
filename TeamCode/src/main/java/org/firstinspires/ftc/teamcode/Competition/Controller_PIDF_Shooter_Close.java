@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.TrollBot;
+package org.firstinspires.ftc.teamcode.Competition;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
  * - Uses System.currentTimeMillis() for timing (ms).
  */
 @Config
-public class PIDF_SpinnerController {
+public class Controller_PIDF_Shooter_Close {
 
     // ===== Dashboard-tunable PIDF coefficients =====
     /** Proportional gain: how strongly we react to RPM error. */
@@ -63,7 +63,7 @@ public class PIDF_SpinnerController {
     private boolean atTarget = false;
     private double lastOutputPower = 0.0;
 
-    public PIDF_SpinnerController(DcMotorEx motor) {
+    public Controller_PIDF_Shooter_Close(DcMotorEx motor) {
         this.motor = motor;
 
         motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);

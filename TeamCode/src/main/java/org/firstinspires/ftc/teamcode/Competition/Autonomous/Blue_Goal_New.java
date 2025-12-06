@@ -17,14 +17,11 @@ import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
 public class Blue_Goal_New extends LinearOpMode {
-
-
     private double initX = -52, initY = -52, initHeading = Math.toRadians(225);
     private double goalX = -24, goalY = -24, goalHeading = Math.toRadians(225);
     private double spikeX = -12, spikeY = -52, spikeHeading = Math.toRadians(270);
 
-    private TrajectoryActionBuilder start, spike1, spike2, spike3, goal1, goal2, goal3, leave;
-
+    private TrajectoryActionBuilder start, spike1, spike2, spike3, gate, goal1, goal2, goal3, leave;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -32,7 +29,6 @@ public class Blue_Goal_New extends LinearOpMode {
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
         double spike_x_gap = 24;
-        double spike_y_gap = 28;
 
         VelConstraint slow = (robotPose, _path, _disp) -> {
             if (robotPose.position.y.value() < -34) {
@@ -44,10 +40,10 @@ public class Blue_Goal_New extends LinearOpMode {
 
         Pose2d goalPose = new Pose2d(goalX, goalY, goalHeading);
 
+        Pose2d gatePose = new Pose2d(0, -56, Math.toRadians(180));
         Pose2d spikeOnePose = new Pose2d(spikeX, spikeY, spikeHeading);
         Pose2d spikeTwoPose = new Pose2d(spikeX + spike_x_gap, spikeY, spikeHeading);
         Pose2d spikeThreePose = new Pose2d(spikeX + (2 * spike_x_gap), spikeY, spikeHeading);
-
 
         Mechanism mechanism = new Mechanism(hardwareMap);
 
@@ -58,7 +54,11 @@ public class Blue_Goal_New extends LinearOpMode {
                 .setTangent(Math.toRadians(0))
                 .splineToSplineHeading(spikeOnePose, Math.toRadians(265), slow);
 
-        goal1 = drive.actionBuilder(spikeOnePose)
+        gate = drive.actionBuilder((spikeOnePose))
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(0, -56, Math.toRadians(180)), Math.toRadians(270));
+
+        goal1 = drive.actionBuilder(gatePose)
                 .setTangent(Math.toRadians(135))
                 .splineToLinearHeading(goalPose, Math.toRadians(90));
 

@@ -11,11 +11,10 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.Competition.Controller_PIDF_Shooter_Close;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.List;
 
 @TeleOp(name = "Test_PIDF_SpinnerController")
 @Config
@@ -23,7 +22,7 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
 
     public static double INITIAL_TARGET_RPM = 4000;
 
-    private PIDF_SpinnerController shooterController;
+    private Controller_PIDF_Shooter_Close shooterController;
 
     private boolean pastA = false;
     private boolean pastY = false;
@@ -44,7 +43,7 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
         spinner.setDirection(DcMotorSimple.Direction.REVERSE);
 
 
-        shooterController = new PIDF_SpinnerController(spinner);
+        shooterController = new Controller_PIDF_Shooter_Close(spinner);
         shooterController.setTargetRpm(INITIAL_TARGET_RPM);
 
         Telemetry dashboardTelemetry = FtcDashboard.getInstance().getTelemetry();
@@ -68,14 +67,14 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
             // A pressed: increase target RPM
             if (y && !pastY) {
                 shooterController.setTargetRpm(
-                        shooterController.getTargetRpm() + PIDF_SpinnerController.RPM_STEP
+                        shooterController.getTargetRpm() + Controller_PIDF_Shooter_Close.RPM_STEP
                 );
             }
 
             // Y pressed: decrease target RPM
             if (a && !pastA) {
                 shooterController.setTargetRpm(
-                        shooterController.getTargetRpm() - PIDF_SpinnerController.RPM_STEP
+                        shooterController.getTargetRpm() - Controller_PIDF_Shooter_Close.RPM_STEP
                 );
             }
 
@@ -90,22 +89,6 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
 
 
 
-            List<AprilTagDetection> detections = aprilTag.getDetections();
-            for (AprilTagDetection d : detections) {
-                if (d.metadata != null && d.id == DESIRED_TAG_ID) {
-                    desiredTag = d;
-                    targetFound = true;
-                    break;
-                }
-            }
-
-            /*if (targetFound && usingCamera){
-                spinner.setPower(currentPower);
-                telemetry.addData("it spins", "");
-            } else {
-                telemetry.addData("Nothing", "");
-                spinner.setPower(0);
-            }*/
 
 
             // ----- Telemetry -----
@@ -114,9 +97,8 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
             telemetry.addData("Raw encoder pos", shooterController.getMotor().getCurrentPosition());
 
             telemetry.addData("Power", currentPower);
-            telemetry.addData("At Target (±%.0f RPM)", PIDF_SpinnerController.RPM_TOLERANCE);
+            telemetry.addData("At Target (±%.0f RPM)", Controller_PIDF_Shooter_Close.RPM_TOLERANCE);
             telemetry.addData("At Target?", shooterController.isAtTarget());
-            telemetry.addData("List",detections.toString()); 
             telemetry.update();
         }
     }

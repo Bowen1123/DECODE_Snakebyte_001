@@ -11,14 +11,20 @@ public class Mechanism {
 
     private DcMotorEx shooter, intake, transfer;
 
+    private Controller_PIDF_Shooter_Close shooter_pid;
+    private boolean active_shooter = false;
 
     public Mechanism(HardwareMap hardwareMap){
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         transfer = hardwareMap.get(DcMotorEx.class, "transfer");
+
+        shooter_pid = new Controller_PIDF_Shooter_Close(shooter);
     }
 
+    private double targetRPM = 0;
 
+    public Action shooterSpinTo(double targetRPM){this.targetRPM = targetRPM; active_shooter = true; return new ShooterSpinTo();}
     public Action shooterPowerUp() { return new ShooterPowerUp(); }
     public Action shooterPowerDown() { return  new ShooterPowerDown(); }
     public Action intakeIn() { return new IntakeIn(); }
@@ -32,20 +38,24 @@ public class Mechanism {
     public Action transferOut() { return new TransferOut(); }
     public Action powerDown() { return new PowerDown(); }
     public Action powerDownIntake() {return new PowerDownIntake(); }
-    public Action shooterStop() {return new ShooterStop(); }
     public Action intakeStop() {return new IntakeStop(); }
     public Action transferStop() {return new TransferStop(); }
 
 
-
-    public class ShooterStop implements Action {
+    public class ShooterSpinTo implements Action {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            shooter.setPower(0);
+            if (active_shooter){
+                shooter_pid.setTargetRpm(targetRPM);
+                shooter.setPower(shooter_pid.update());
+                return true; /// I think true means it will loop, false it will end
+            }
             return false;
         }
     }
+
+
 
     public class IntakeStop implements Action {
 
