@@ -6,20 +6,23 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class Mechanism {
 
-    private DcMotorEx shooter, intake, transfer;
+    private DcMotorEx shooter, shooter2, intake, transfer;
 
     private Controller_PIDF_Shooter_Close shooter_pid;
     private boolean active_shooter = false;
 
     public Mechanism(HardwareMap hardwareMap){
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
+        shooter2 = hardwareMap.get(DcMotorEx.class, "shooter2");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         transfer = hardwareMap.get(DcMotorEx.class, "transfer");
 
         shooter_pid = new Controller_PIDF_Shooter_Close(shooter);
+
     }
 
     private double targetRPM = 0;
@@ -46,14 +49,23 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            if (active_shooter){
-                shooter_pid.setTargetRpm(targetRPM);
+            ElapsedTime timer = new ElapsedTime();
+
+            timer.reset();
+            shooter_pid.setTargetRpm(targetRPM);
+
+            if (!(shooter_pid.getCurrentRpm() > targetRPM && timer.seconds() < 1.6) /* && timer.seconds() < 2 !shooter_pid.isAtTarget()*/){
                 shooter.setPower(shooter_pid.update());
+                shooter2.setPower(-shooter_pid.update());
+
+
+
                 return true; /// I think true means it will loop, false it will end
             }
             return false;
         }
     }
+
 
 
 
@@ -80,6 +92,7 @@ public class Mechanism {
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
             shooter.setPower(0);
+            shooter2.setPower(0);
             transfer.setPower(0);
             intake.setPower(0);
             return false;
@@ -99,7 +112,8 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            shooter.setPower(1);
+            shooter.setPower(.75);
+            shooter2.setPower(.75);
             return false;
         }
     }
@@ -109,6 +123,7 @@ public class Mechanism {
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
             shooter.setPower(0);
+            shooter2.setPower(0);
             return false;
         }
     }
@@ -117,7 +132,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            intake.setPower(.85);
+            intake.setPower(1);
             return false;
         }
     }
@@ -126,7 +141,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            intake.setPower(.45);
+            intake.setPower(.5);
             return false;
         }
     }
@@ -144,7 +159,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(.9);
+            transfer.setPower(.6);
             return false;
         }
     }
@@ -165,7 +180,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(.45);
+            transfer.setPower(.35);
             return false;
         }
     }
@@ -173,7 +188,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(.15);
+            transfer.setPower(.2);
             return false;
         }
     }

@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp
 public class Teleop extends LinearOpMode {
-    private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake;
+    private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake, shooter2;
     private Servo ramp;
     private IMU imu;
     private double SPEED_MULTIPLIER = 1;
@@ -37,6 +37,9 @@ public class Teleop extends LinearOpMode {
         Pose2d initialPose = new Pose2d(0,0,0);
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
+        boolean active_shooter = false;
+        Controller_PIDF_Shooter_Close shooter_pid = new Controller_PIDF_Shooter_Close(shooter);
+
         double shooterPower = 0.1;
         double intakePower = 0.85;
         double transferPower = .85;
@@ -52,14 +55,33 @@ public class Teleop extends LinearOpMode {
                 shooterPower += .1;
             }
 
-            if (gamepad2.x & gamepad2.y){
-                shooter.setPower(0.1);
-            } else if (gamepad2.x){
-                shooter.setPower(1);
-            } else if (gamepad2.y){
-                shooter.setPower(0);
+//            if (gamepad2.x & gamepad2.y){
+//                shooter.setPower(0.1);
+//                shooter2.setPower(0.1);
+//            } else if (gamepad2.x){
+//                shooter.setPower(1);
+//                shooter2.setPower(1);
+//            } else if (gamepad2.y){
+//                shooter.setPower(0);
+//                shooter2.setPower(0);
+//            }
+
+            if (gamepad2.x){
+                active_shooter = true;
+                shooter_pid.setTargetRpm(3250);
+            } else  if (gamepad2.y){
+                active_shooter = false;
             }
 
+
+            if (active_shooter){
+                double power = shooter_pid.update();
+                shooter.setPower(power);
+                shooter2.setPower(power);
+            } else {
+                shooter.setPower(0);
+                shooter2.setPower(0);
+            }
 
 
             if (gamepad2.right_bumper || gamepad1.right_bumper){
@@ -76,6 +98,10 @@ public class Teleop extends LinearOpMode {
             if (gamepad2.right_trigger > 0.1){
                 transfer.setPower(gamepad2.right_trigger);
             } else if (gamepad2.left_trigger > 0.1){
+                transfer.setPower(-transferPower / 2);
+            } else if (gamepad1.right_trigger > 0.1){
+                transfer.setPower(gamepad1.right_trigger);
+            } else if (gamepad1.left_trigger > 0.1) {
                 transfer.setPower(-transferPower / 2);
             } else {
                 transfer.setPower(0);
@@ -107,10 +133,10 @@ public class Teleop extends LinearOpMode {
             moveRobot(xPower, yPower, driveTurn);*/
             drive.setDrivePowers(new PoseVelocity2d(
                     new Vector2d(
-                            -gamepad1.left_stick_y,
-                            -gamepad1.left_stick_x
+                            -gamepad1.left_stick_y * .75,
+                            -gamepad1.left_stick_x * .75
                     ),
-                    -gamepad1.right_stick_x
+                    -gamepad1.right_stick_x * .75
             ));
 
 
@@ -156,6 +182,7 @@ public class Teleop extends LinearOpMode {
         rightBack = hardwareMap.get(DcMotorEx.class, "rightBack");
         transfer = hardwareMap.get(DcMotorEx.class, "transfer");
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
+        shooter2 = hardwareMap.get(DcMotorEx.class, "shooter2");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
 
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);

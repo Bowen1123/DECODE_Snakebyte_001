@@ -14,20 +14,20 @@ public class Controller_PIDF_Shooter_Close {
 
     // ===== Dashboard-tunable PIDF coefficients =====
     /** Proportional gain: how strongly we react to RPM error. */
-    public static double kP = 0.0012;
+    public static double kP = 0.0035;
 
     /** Integral gain: fixes small steady-state errors (usually small or zero). */
-    public static double kI = 0.000049;
+    public static double kI = 0.000009;
 
     /** Derivative gain: reacts to change in error, helps damp oscillations. */
-    public static double kD = 0.0;
+    public static double kD = 0.000018; // 0.0000018
 
     /**
      * Feedforward gain:
      * maps targetRPM -> base power (open-loop guess).
      * power_ff ≈ kF * targetRPM
      */
-    public static double kF = 0.000159;
+    public static double kF = 0.00025;
 
     // ===== General config (also tunable on Dashboard) =====
     /** Encoder ticks per motor revolution. */
@@ -43,7 +43,7 @@ public class Controller_PIDF_Shooter_Close {
     public static double RPM_STEP = 250.0;
 
     /** Deadband around target RPM for "close enough". */
-    public static double RPM_TOLERANCE = 15;
+    public static double RPM_TOLERANCE = 40;
 
     /** Limit on integral term to avoid crazy wind-up. */
     public static double MAX_INTEGRAL = 5000.0;
@@ -67,7 +67,7 @@ public class Controller_PIDF_Shooter_Close {
         this.motor = motor;
 
         motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         lastPosition = motor.getCurrentPosition();
@@ -82,8 +82,8 @@ public class Controller_PIDF_Shooter_Close {
      *  3. Applies power to the motor.
      *  4. Returns the power that was applied.
      */
-    public static long MIN_DT_MILLIS = 100;   // don’t recompute velocity faster than this
-    public static double RPM_ALPHA = 0.75;    // 0 = very smooth -> 1 = no smoothing
+    public static long MIN_DT_MILLIS = 69;   // don’t recompute velocity faster than this
+    public static double RPM_ALPHA = 0.87;    // 0 = very smooth -> 1 = no smoothing
 
     public double update() {
         long now = System.currentTimeMillis();

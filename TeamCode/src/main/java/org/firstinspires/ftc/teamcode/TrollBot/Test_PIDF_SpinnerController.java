@@ -20,7 +20,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 @Config
 public class Test_PIDF_SpinnerController extends LinearOpMode {
 
-    public static double INITIAL_TARGET_RPM = 4000;
+    public static double INITIAL_TARGET_RPM = 3000;
 
     private Controller_PIDF_Shooter_Close shooterController;
 
@@ -39,8 +39,9 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         // Hardware
-        DcMotorEx spinner = hardwareMap.get(DcMotorEx.class, "spinner");
-        spinner.setDirection(DcMotorSimple.Direction.REVERSE);
+        DcMotorEx spinner = hardwareMap.get(DcMotorEx.class, "shooter");
+        DcMotorEx spinner2 = hardwareMap.get(DcMotorEx.class, "shooter2");
+        // spinner.setDirection(DcMotorSimple.Direction.REVERSE);
 
 
         shooterController = new Controller_PIDF_Shooter_Close(spinner);
@@ -53,7 +54,6 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
         telemetry.addLine("Use A/Y to adjust target RPM.");
         telemetry.update();
 
-        initAprilTag();
 
         boolean targetFound = false;
 
@@ -85,6 +85,7 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
             // ----- Update controller -----
             double currentPower = shooterController.update();
             spinner.setPower(currentPower);
+            spinner2.setPower(currentPower);
 
 
 
@@ -103,26 +104,4 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
         }
     }
 
-
-    private void initAprilTag() {
-        aprilTag = new AprilTagProcessor.Builder()
-                .setDrawAxes(true)
-                .setDrawCubeProjection(false)
-                .setDrawTagID(true)
-                // You can tweak decimation for range vs FPS
-                .build();
-        aprilTag.setDecimation(2);
-
-        if (usingCamera) {
-            visionPortal = new VisionPortal.Builder()
-                    .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
-                    .addProcessor(aprilTag)
-                    .build();
-        } else {
-            visionPortal = new VisionPortal.Builder()
-                    .setCamera(BuiltinCameraDirection.BACK)
-                    .addProcessor(aprilTag)
-                    .build();
-        }
-    }
 }

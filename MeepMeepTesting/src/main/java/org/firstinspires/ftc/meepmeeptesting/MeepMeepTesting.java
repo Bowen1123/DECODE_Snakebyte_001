@@ -2,6 +2,7 @@ package org.firstinspires.ftc.meepmeeptesting;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.VelConstraint;
 import com.noahbres.meepmeep.MeepMeep;
 import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
@@ -19,13 +20,14 @@ public class MeepMeepTesting {
 
         RoadRunnerBotEntity newBot = new DefaultBotBuilder(meepMeep)
                 // Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
-                .setConstraints(50, 40, Math.PI/2, Math.PI/2, 15)
+                .setConstraints(50, 40, Math.PI, Math.PI, 15)
                 .setDimensions(15,15)
                 .build();
 
         //blue_goal(myBot);
-        red_goal_new_nogate(newBot);
+        //blue_goal_new_gate(newBot);
         //blue_goal_new_nogate(newBot);
+        blue_far(newBot);
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
@@ -114,6 +116,32 @@ public class MeepMeepTesting {
                 .lineToX(-60)
 
                 .build());
+    }
+
+    static void blue_far(RoadRunnerBotEntity myBot){
+        Pose2d initialPose = new Pose2d(64,-10,Math.toRadians(180));
+
+        VelConstraint baseVelConstraint = (robotPose, _path, _disp) -> {
+            if (robotPose.position.y.value() < -34) {
+                return 20.0;
+            } else {
+                return 50.0;
+            }
+        };
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+
+                .splineToLinearHeading(new Pose2d(-12, -12, Math.toRadians(225)), Math.toRadians(180))
+
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(-12, -52, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(45)
+                        .splineToSplineHeading(new Pose2d(-12, -12, Math.toRadians(225)), Math.toRadians(135))
+
+                .build());
+
+
     }
     static void blue_goal_new_nogate(RoadRunnerBotEntity myBot){
 
