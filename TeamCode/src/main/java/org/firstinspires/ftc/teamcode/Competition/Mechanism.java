@@ -159,7 +159,7 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(.6);
+            transfer.setPower(.65);
             return false;
         }
     }
@@ -174,13 +174,11 @@ public class Mechanism {
     }
 
 
-
-
     public class TransferSlow implements Action {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            transfer.setPower(.35);
+            transfer.setPower(.4);
             return false;
         }
     }

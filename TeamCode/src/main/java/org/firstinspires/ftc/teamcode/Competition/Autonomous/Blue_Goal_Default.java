@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.Competition.Mechanism;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
-public class Blue_Goal_2 extends LinearOpMode {
+public class Blue_Goal_Default extends LinearOpMode {
     private double initX = -52, initY = -52, initHeading = Math.toRadians(225);
     private double goalX = -20, goalY = -20, goalHeading = Math.toRadians(215);
     private double spikeX = -12 /*12*/ , spikeY = -52, spikeHeading = Math.toRadians(270);

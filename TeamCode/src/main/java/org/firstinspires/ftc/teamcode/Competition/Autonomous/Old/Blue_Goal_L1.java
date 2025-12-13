@@ -10,6 +10,7 @@ import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -18,8 +19,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.Competition.Mechanism;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
+@Disabled
 @Autonomous
-public class Blue_Goal extends LinearOpMode {
+public class Blue_Goal_L1 extends LinearOpMode {
     private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake;
     private Servo ramp;
     private IMU imu;

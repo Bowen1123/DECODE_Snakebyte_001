@@ -2,12 +2,12 @@ package org.firstinspires.ftc.teamcode.Competition.Autonomous.Old;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -17,9 +17,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Competition.Mechanism;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
-
+@Disabled
 @Autonomous
-public class Red_Goal extends LinearOpMode {
+public class Red_Far_Zone_L1 extends LinearOpMode {
     private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake;
     private Servo ramp;
     private IMU imu;
@@ -27,12 +27,11 @@ public class Red_Goal extends LinearOpMode {
     private double RAMP_EXTEND_LIMIT, RAMP_RETRACT_LIMIT;
 
     private boolean pastA = false, pastB = false;
-
     @Override
     public void runOpMode() throws InterruptedException {
 
         initialize();
-        Pose2d initialPose = new Pose2d(0, 0, Math.toRadians(-45));
+        Pose2d initialPose = new Pose2d(0, 0, Math.toRadians(0));
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
         Mechanism mechanism = new Mechanism(hardwareMap);
@@ -40,12 +39,12 @@ public class Red_Goal extends LinearOpMode {
         TrajectoryActionBuilder defaultPath = drive.actionBuilder(initialPose)
                 .splineToConstantHeading(new Vector2d(18, -12), Math.toRadians(315));
 
-        TrajectoryActionBuilder backUp = drive.actionBuilder(initialPose)
-                .lineToX(-22);
+        TrajectoryActionBuilder forward = drive.actionBuilder(initialPose)
+                .lineToX(30);
 
         TrajectoryActionBuilder leave = drive.actionBuilder(new Pose2d(-20, 20, Math.toRadians(-45)))
                 .turn(Math.toRadians(-135))
-                .lineToX(-50);
+                .lineToX(-44);
         // .splineTo(new Vector2d(-24, 24), Math.toRadians(90));
 
         TrajectoryActionBuilder spike1 = drive.actionBuilder(new Pose2d(-44, 20, Math.toRadians(-180)))
@@ -56,36 +55,36 @@ public class Red_Goal extends LinearOpMode {
         waitForStart();
 
         Actions.runBlocking(new SequentialAction(
-                mechanism.shooterPowerUp(),
-                backUp.build(),
-                new SleepAction(1.4),
-                mechanism.transferSlow(),
-                new SleepAction(2),
-
-                //mechanism.transferStop(),
-                mechanism.intakeIn(),
-                new SleepAction(.5),
-                mechanism.intakeStop(),
-                mechanism.transferSlow(),
-                new SleepAction(2),
-
-                mechanism.intakeIn(),
-                new SleepAction(.5),
-                ///mechanism.intakeStop(),
-                mechanism.transferOut(),
-                new SleepAction(.6),
-                mechanism.transferIn(),
-                //mechanism.transferSlow(),
-                new SleepAction(2),
-
-                mechanism.powerDown(),
-                leave.build(),
-                new SleepAction(.5),
-
-                ///mechanism.intakeIn(),
-
-
-                new SleepAction(30)
+                // mechanism.shooterPowerUp(),
+                forward.build()
+//                new SleepAction(1.4),
+//                mechanism.transferSlow(),
+//                new SleepAction(2),
+//
+//                //mechanism.transferStop(),
+//                mechanism.intakeIn(),
+//                new SleepAction(.5),
+//                mechanism.intakeStop(),
+//                mechanism.transferSlow(),
+//                new SleepAction(2),
+//
+//                mechanism.intakeIn(),
+//                new SleepAction(.5),
+//                ///mechanism.intakeStop(),
+//                mechanism.transferOut(),
+//                new SleepAction(.3),
+//                mechanism.transferIn(),
+//                //mechanism.transferSlow(),
+//                new SleepAction(1.2),
+//
+//                mechanism.powerDown(),
+//                leave.build(),
+//                new SleepAction(.5),
+//
+//                ///mechanism.intakeIn(),
+//
+//
+//                new SleepAction(30)
         ));
 
 
@@ -143,3 +142,4 @@ public class Red_Goal extends LinearOpMode {
 
     }
 }
+

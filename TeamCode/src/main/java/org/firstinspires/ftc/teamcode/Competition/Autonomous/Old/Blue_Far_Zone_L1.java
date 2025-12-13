@@ -1,16 +1,14 @@
-package org.firstinspires.ftc.teamcode.Competition.Autonomous;
+package org.firstinspires.ftc.teamcode.Competition.Autonomous.Old;
 
-import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -19,9 +17,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Competition.Mechanism;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
-
+@Disabled
 @Autonomous
-public class Red_Far_Zone extends LinearOpMode {
+public class Blue_Far_Zone_L1 extends LinearOpMode {
     private DcMotorEx leftFront, leftBack, rightFront, rightBack, transfer, shooter, intake;
     private Servo ramp;
     private IMU imu;
@@ -29,6 +27,7 @@ public class Red_Far_Zone extends LinearOpMode {
     private double RAMP_EXTEND_LIMIT, RAMP_RETRACT_LIMIT;
 
     private boolean pastA = false, pastB = false;
+
     @Override
     public void runOpMode() throws InterruptedException {
 

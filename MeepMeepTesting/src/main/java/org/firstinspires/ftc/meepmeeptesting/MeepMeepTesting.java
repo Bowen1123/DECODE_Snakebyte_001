@@ -2,7 +2,6 @@ package org.firstinspires.ftc.meepmeeptesting;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
-import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.VelConstraint;
 import com.noahbres.meepmeep.MeepMeep;
 import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
@@ -27,7 +26,12 @@ public class MeepMeepTesting {
         //blue_goal(myBot);
         //blue_goal_new_gate(newBot);
         //blue_goal_new_nogate(newBot);
-        blue_far(newBot);
+        //blue_far(newBot);
+
+        /// blue_goal_league2(newBot);
+        /// red_goal_league2(newBot);
+        blue_far_league2_far_spike(newBot);
+        red_far_league2_far_spike(newBot);
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
@@ -35,6 +39,157 @@ public class MeepMeepTesting {
                 .addEntity(newBot)
                 .start();
     }
+
+    ///  League 2 ///
+    static void red_goal_league2 (RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(-52,52,Math.toRadians(-225));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .lineToX(-18)
+
+
+                .setTangent(Math.toRadians(-315))
+                .splineToLinearHeading(new Pose2d(-12, 30, Math.toRadians(-270)), Math.toRadians(-270))
+
+                .setTangent(Math.toRadians(-270))
+                .lineToY(52, new TranslationalVelConstraint(16))
+
+                .setTangent(-90)
+                .splineToLinearHeading(new Pose2d(-18,18,Math.toRadians(-225)), Math.toRadians(-90))
+
+                .setTangent(Math.toRadians(-315))
+                .splineToLinearHeading(new Pose2d(12, 30, Math.toRadians(-270)), Math.toRadians(-270))
+
+                .setTangent(Math.toRadians(-270))
+                .lineToY(52, new TranslationalVelConstraint(16))
+
+                .setTangent(-90)
+                .splineToLinearHeading(new Pose2d(-18,18,Math.toRadians(-225)), Math.toRadians(-135))
+
+                .setTangent(Math.toRadians(180))
+                .lineToX(-60)
+
+                .build());
+    }
+    static void blue_goal_league2 (RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(-52,-52,Math.toRadians(225));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .lineToX(-18)
+
+
+                .setTangent(Math.toRadians(315))
+                .splineToLinearHeading(new Pose2d(-12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(90)
+                .splineToLinearHeading(new Pose2d(-18,-18,Math.toRadians(225)), Math.toRadians(90))
+
+                .setTangent(Math.toRadians(315))
+                .splineToLinearHeading(new Pose2d(12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-18,-18,Math.toRadians(225)), Math.toRadians(135))
+
+                .setTangent(Math.toRadians(180))
+                .lineToX(-60)
+
+                .build());
+    }
+
+    static void blue_far_league2_far_spike(RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(60,-10,Math.toRadians(180));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .splineToLinearHeading(new Pose2d(-18,-18, Math.toRadians(225)), Math.toRadians(180))
+
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(36, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-18,-18, Math.toRadians(225)), Math.toRadians(180))
+
+
+                .lineToX(-60)
+                .build());
+    }
+
+    static void red_far_league2_far_spike(RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(60,10,Math.toRadians(-180));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .splineToLinearHeading(new Pose2d(-18,18, Math.toRadians(-225)), Math.toRadians(-180))
+
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(36, 30, Math.toRadians(-270)), Math.toRadians(-270))
+
+                .setTangent(Math.toRadians(-270))
+                .lineToY(52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(-90))
+                .splineToLinearHeading(new Pose2d(-18,18, Math.toRadians(-225)), Math.toRadians(-180))
+
+
+                .lineToX(-60)
+                .build());
+    }
+
+    static void blue_far_league2_middle_spike(RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(60,-10,Math.toRadians(180));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .splineToLinearHeading(new Pose2d(-18,-18, Math.toRadians(225)), Math.toRadians(180))
+
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-18,-18, Math.toRadians(225)), Math.toRadians(180))
+
+
+                .lineToX(-60)
+                .build());
+    }
+
+    static void red_far_league2_middle_spike(RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(60,10,Math.toRadians(-180));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .splineToLinearHeading(new Pose2d(-18,18, Math.toRadians(-225)), Math.toRadians(-180))
+
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(12, 30, Math.toRadians(-270)), Math.toRadians(-270))
+
+                .setTangent(Math.toRadians(-270))
+                .lineToY(52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(-90))
+                .splineToLinearHeading(new Pose2d(-18,18, Math.toRadians(-225)), Math.toRadians(-180))
+
+
+                .lineToX(-60)
+                .build());
+    }
+
+
+
 
     static void red_goal_new_nogate(RoadRunnerBotEntity myBot){
 
@@ -118,6 +273,7 @@ public class MeepMeepTesting {
                 .build());
     }
 
+    ///  League 1 ///
     static void blue_far(RoadRunnerBotEntity myBot){
         Pose2d initialPose = new Pose2d(64,-10,Math.toRadians(180));
 
