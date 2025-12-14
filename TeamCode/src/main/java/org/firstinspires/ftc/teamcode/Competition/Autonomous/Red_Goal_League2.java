@@ -20,7 +20,7 @@ public class Red_Goal_League2 extends LinearOpMode {
     private double initX = -52, initY = 52, initHeading = Math.toRadians(-225);
     private double goalX = -18, goalY = 18, goalHeading = Math.toRadians(-225);
     private double spikeX = -12 /*12*/ , spikeY = 30, spikeHeading = Math.toRadians(-270);
-    private double intakeSpikeY = 52;
+    private double intakeSpikeY = 59;
 
     private TrajectoryActionBuilder start, spike1, spike2, spike3, gate, goal1, goal2, goal3, leave;
 
@@ -33,7 +33,7 @@ public class Red_Goal_League2 extends LinearOpMode {
 
         double spike_x_gap = 24;
 
-        TranslationalVelConstraint slow = new TranslationalVelConstraint(14);
+        TranslationalVelConstraint slow = new TranslationalVelConstraint(12);
 
         Pose2d goalPose = new Pose2d(goalX, goalY, goalHeading);
         Pose2d gatePose = new Pose2d(0, -56, Math.toRadians(180));
@@ -75,6 +75,12 @@ public class Red_Goal_League2 extends LinearOpMode {
         TrajectoryActionBuilder end = drive.actionBuilder(goalPose)
                 .setTangent(Math.toRadians(-180))
                 .lineToX(-60);
+
+        TrajectoryActionBuilder fixHeading = drive.actionBuilder(goalPose)
+                .turnTo(Math.toRadians(-220));
+
+        TrajectoryActionBuilder unfixHeading = drive.actionBuilder(new Pose2d(goalX, goalY, Math.toRadians(-220)))
+                .turnTo(Math.toRadians(-225));
 //        TrajectoryActionBuilder spikeThree = drive.actionBuilder(goalPose)
 //                .setTangent(315)
 //                .splineToLinearHeading(spikeThreePose, spikeHeading);
@@ -90,53 +96,56 @@ public class Red_Goal_League2 extends LinearOpMode {
                 new SequentialAction(
                         mechanism.shooterPowerUp(),
                         start.build(),
-                        new SleepAction(.3),
+                        // new SleepAction(.3),
 
                         mechanism.intakeSlow(),
                         mechanism.transferSlow(),
-                        new SleepAction(3),
+                        new SleepAction(2.2),
                         mechanism.transferIn(),
-                        new SleepAction(1),
+                        new SleepAction(1.4),
                         mechanism.powerDown(),
-                        new SleepAction(.2),
+                        // new SleepAction(.2),
 
                         spikeOne.build(),
                         mechanism.intakeIn(),
                         mechanism.transferSlowest(),
                         spikeOneIntake.build(),
-                        new SleepAction(.2),
+                        // new SleepAction(.2),
                         mechanism.intakeStop(),
 
                         mechanism.shooterPowerUp(),
                         goal1.build(),
-                        new SleepAction(.3),
+                        // new SleepAction(.3),
+                        fixHeading.build(),
 
                         mechanism.intakeSlow(),
                         mechanism.transferSlow(),
-                        new SleepAction(3),
+                        new SleepAction(2),
                         mechanism.transferIn(),
-                        new SleepAction(1),
+                        new SleepAction(1.4),
                         mechanism.powerDown(),
-                        new SleepAction(.2),
+                        // new SleepAction(.2),
+                        unfixHeading.build(),
 
                         spikeTwo.build(),
                         mechanism.intakeIn(),
                         mechanism.transferSlowest(),
                         spikeTwoIntake.build(),
-                        new SleepAction(.2),
+                        // new SleepAction(.2),
                         mechanism.intakeStop(),
 
                         mechanism.shooterPowerUp(),
                         goal2.build(),
-                        new SleepAction(.3),
+                        // new SleepAction(.3),
+                        fixHeading.build(),
 
                         mechanism.intakeSlow(),
                         mechanism.transferSlow(),
-                        new SleepAction(3),
+                        new SleepAction(2),
                         mechanism.transferIn(),
-                        new SleepAction(1),
+                        new SleepAction(1.4),
                         mechanism.powerDown(),
-                        new SleepAction(.2),
+                        // new SleepAction(.2),
 
                         mechanism.powerDown(),
                         end.build()

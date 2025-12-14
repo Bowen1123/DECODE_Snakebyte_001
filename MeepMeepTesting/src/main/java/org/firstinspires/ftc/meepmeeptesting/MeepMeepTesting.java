@@ -31,7 +31,8 @@ public class MeepMeepTesting {
         /// blue_goal_league2(newBot);
         /// red_goal_league2(newBot);
         blue_far_league2_far_spike(newBot);
-        red_far_league2_far_spike(newBot);
+        /// red_far_league2_far_spike(newBot);
+        /// blue_far_league2_middle_spike(newBot);
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
@@ -162,6 +163,14 @@ public class MeepMeepTesting {
                 .setTangent(Math.toRadians(90))
                 .splineToLinearHeading(new Pose2d(-18,-18, Math.toRadians(225)), Math.toRadians(180))
 
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(-12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-18,-18, Math.toRadians(225)), Math.toRadians(180))
 
                 .lineToX(-60)
                 .build());

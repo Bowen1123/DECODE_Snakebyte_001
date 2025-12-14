@@ -112,8 +112,8 @@ public class Mechanism {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            shooter.setPower(.75);
-            shooter2.setPower(.75);
+            shooter.setPower(.8);
+            shooter2.setPower(.8);
             return false;
         }
     }
