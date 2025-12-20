@@ -28,9 +28,9 @@ public class MeepMeepTesting {
         //blue_goal_new_nogate(newBot);
         //blue_far(newBot);
 
-        /// blue_goal_league2(newBot);
+        blue_goal_league2(newBot);
         /// red_goal_league2(newBot);
-        blue_far_league2_far_spike(newBot);
+        /// blue_far_league2_far_spike(newBot);
         /// red_far_league2_far_spike(newBot);
         /// blue_far_league2_middle_spike(newBot);
 
