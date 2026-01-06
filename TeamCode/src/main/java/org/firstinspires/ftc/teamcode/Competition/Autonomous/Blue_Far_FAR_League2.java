@@ -1,19 +1,16 @@
 package org.firstinspires.ftc.teamcode.Competition.Autonomous;
 
 
-import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
-import com.acmerobotics.roadrunner.Vector2d;
-import com.acmerobotics.roadrunner.VelConstraint;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism;
+import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
@@ -30,7 +27,7 @@ public class Blue_Far_FAR_League2 extends LinearOpMode {
         Pose2d initialPose = new Pose2d(initX, initY, initHeading);
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
-        Mechanism mechanism = new Mechanism(hardwareMap);
+        Mechanism_League2 mechanism = new Mechanism_League2(hardwareMap);
 
         double spike_x_gap = 24;
 

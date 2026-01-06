@@ -10,7 +10,7 @@ import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism;
+import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
@@ -43,7 +43,7 @@ public class Blue_Goal_Default extends LinearOpMode {
         Pose2d spikeTwoPose = new Pose2d(spikeX + spike_x_gap, spikeY, spikeHeading);
         Pose2d spikeThreePose = new Pose2d(spikeX + (2 * spike_x_gap), spikeY, spikeHeading);
 
-        Mechanism mechanism = new Mechanism(hardwareMap);
+        Mechanism_League2 mechanism = new Mechanism_League2(hardwareMap);
 
         start = drive.actionBuilder(initialPose)
                 .lineToX(-20);

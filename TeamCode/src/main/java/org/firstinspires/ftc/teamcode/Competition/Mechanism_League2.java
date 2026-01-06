@@ -8,14 +8,14 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-public class Mechanism {
+public class Mechanism_League2 {
 
     private DcMotorEx shooter, shooter2, intake, transfer;
 
     private Controller_PIDF_Shooter_Close shooter_pid;
     private boolean active_shooter = false;
 
-    public Mechanism(HardwareMap hardwareMap){
+    public Mechanism_League2(HardwareMap hardwareMap){
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
         shooter2 = hardwareMap.get(DcMotorEx.class, "shooter2");
         intake = hardwareMap.get(DcMotorEx.class, "intake");

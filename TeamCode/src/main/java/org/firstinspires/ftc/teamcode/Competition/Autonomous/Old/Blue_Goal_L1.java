@@ -16,7 +16,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism;
+import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Disabled
@@ -44,7 +44,7 @@ public class Blue_Goal_L1 extends LinearOpMode {
 
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
-        Mechanism mechanism = new Mechanism(hardwareMap);
+        Mechanism_League2 mechanism = new Mechanism_League2(hardwareMap);
 
         TrajectoryActionBuilder backUp = drive.actionBuilder(initialPose)
                 .lineToX(-24);

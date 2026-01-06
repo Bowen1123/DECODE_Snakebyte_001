@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism;
+import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 @Disabled
 @Autonomous
@@ -34,7 +34,7 @@ public class Red_Far_Zone_L1 extends LinearOpMode {
         Pose2d initialPose = new Pose2d(0, 0, Math.toRadians(0));
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
-        Mechanism mechanism = new Mechanism(hardwareMap);
+        Mechanism_League2 mechanism = new Mechanism_League2(hardwareMap);
 
         TrajectoryActionBuilder defaultPath = drive.actionBuilder(initialPose)
                 .splineToConstantHeading(new Vector2d(18, -12), Math.toRadians(315));

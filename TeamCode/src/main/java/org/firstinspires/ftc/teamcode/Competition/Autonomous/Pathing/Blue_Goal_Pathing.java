@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism;
+import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
@@ -28,7 +28,7 @@ public class Blue_Goal_Pathing extends LinearOpMode {
         Pose2d initialPose = new Pose2d(-52,-52,Math.toRadians(225));
         MecanumDrive drive = new MecanumDrive(hardwareMap, initialPose);
 
-        Mechanism mechanism = new Mechanism(hardwareMap);
+        Mechanism_League2 mechanism = new Mechanism_League2(hardwareMap);
 
         TrajectoryActionBuilder defaultPath = drive.actionBuilder(initialPose)
                 ///  START & CYCLE
