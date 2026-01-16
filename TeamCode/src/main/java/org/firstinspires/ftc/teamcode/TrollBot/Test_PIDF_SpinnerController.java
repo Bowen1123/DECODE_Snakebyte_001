@@ -20,7 +20,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 @Config
 public class Test_PIDF_SpinnerController extends LinearOpMode {
 
-    public static double INITIAL_TARGET_RPM = 3000;
+    public static double INITIAL_TARGET_RPM = 2000;
 
     private Controller_PIDF_Shooter_Close shooterController;
 
@@ -39,9 +39,12 @@ public class Test_PIDF_SpinnerController extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         // Hardware
-        DcMotorEx spinner = hardwareMap.get(DcMotorEx.class, "shooter");
-        DcMotorEx spinner2 = hardwareMap.get(DcMotorEx.class, "shooter2");
-        // spinner.setDirection(DcMotorSimple.Direction.REVERSE);
+        DcMotorEx spinner = hardwareMap.get(DcMotorEx.class, "topShooter");
+        DcMotorEx spinner2 = hardwareMap.get(DcMotorEx.class, "bottomShooter");
+
+        spinner.setDirection(DcMotorSimple.Direction.REVERSE);
+        spinner2.setDirection(DcMotorSimple.Direction.REVERSE);
+
 
 
         shooterController = new Controller_PIDF_Shooter_Close(spinner);

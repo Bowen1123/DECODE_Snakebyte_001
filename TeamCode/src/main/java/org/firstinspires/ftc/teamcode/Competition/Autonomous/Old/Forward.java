@@ -1,9 +1,8 @@
-package org.firstinspires.ftc.teamcode.Competition.Autonomous;
+package org.firstinspires.ftc.teamcode.Competition.Autonomous.Old;
+
 
 
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.ftc.Actions;
@@ -14,11 +13,11 @@ import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
-public class Red_Far_FAR_League2 extends LinearOpMode {
-    private double initX = 60, initY = 10, initHeading = Math.toRadians(-180);
-    private double goalX = -18, goalY = 18, goalHeading = Math.toRadians(-225);
-    private double spikeX = -12 /*12*/ , spikeY = 30, spikeHeading = Math.toRadians(-270);
-    private double intakeSpikeY = 52;
+public class Forward extends LinearOpMode {
+    private double initX = 60, initY = -10, initHeading = Math.toRadians(180);
+    private double goalX = -18, goalY = -18, goalHeading = Math.toRadians(225);
+    private double spikeX = -12.5 /*12*/ , spikeY = -30, spikeHeading = Math.toRadians(270);
+    private double intakeSpikeY = -52;
 
     private TrajectoryActionBuilder start, spike1, spike2, spike3, gate, goal1, goal2, goal3, leave;
 
@@ -45,8 +44,8 @@ public class Red_Far_FAR_League2 extends LinearOpMode {
 
 
 
-        TrajectoryActionBuilder start = drive.actionBuilder(initialPose)
-                .splineToLinearHeading(goalPose, Math.toRadians(-180));
+        TrajectoryActionBuilder start = drive.actionBuilder(new Pose2d(0, 0, 0))
+                .lineToX(24);
 
         TrajectoryActionBuilder spikeThree = drive.actionBuilder(goalPose)
                 .setTangent(0)
@@ -56,11 +55,11 @@ public class Red_Far_FAR_League2 extends LinearOpMode {
                 .lineToY(spikeY, new TranslationalVelConstraint(16));
 
         TrajectoryActionBuilder goal3 = drive.actionBuilder(spikeThreeIntookPose)
-                .setTangent(Math.toRadians(-90))
-                .splineToLinearHeading(goalPose, Math.toRadians(-180));
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(goalPose, Math.toRadians(180));
 
         TrajectoryActionBuilder end = drive.actionBuilder(goalPose)
-                .setTangent(-180)
+                .setTangent(180)
                 .lineToX(-60);
 
 //        TrajectoryActionBuilder spikeThree = drive.actionBuilder(goalPose)
@@ -74,42 +73,6 @@ public class Red_Far_FAR_League2 extends LinearOpMode {
 
         waitForStart();
 
-        Actions.runBlocking(
-                new SequentialAction(
-                        mechanism.shooterPowerUp(),
-                        start.build(),
-                        new SleepAction(.3),
-
-                        mechanism.intakeSlow(),
-                        mechanism.transferSlow(),
-                        new SleepAction(3),
-                        mechanism.transferIn(),
-                        new SleepAction(1),
-                        mechanism.powerDown(),
-                        new SleepAction(.2),
-
-                        spikeThree.build(),
-                        mechanism.intakeIn(),
-                        mechanism.transferSlowest(),
-                        spikeThreeIntake.build(),
-                        new SleepAction(.2),
-                        mechanism.intakeStop(),
-
-                        mechanism.shooterPowerUp(),
-                        goal3.build(),
-                        new SleepAction(.3),
-
-                        mechanism.intakeSlow(),
-                        mechanism.transferSlow(),
-                        new SleepAction(3),
-                        mechanism.transferIn(),
-                        new SleepAction(1),
-                        mechanism.powerDown(),
-                        new SleepAction(.2),
-
-                        mechanism.powerDown(),
-                        end.build()
-                )
-        );
+        Actions.runBlocking(start.build());
     }
 }
