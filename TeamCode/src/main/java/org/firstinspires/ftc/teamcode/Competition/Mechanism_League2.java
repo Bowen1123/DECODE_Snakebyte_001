@@ -30,10 +30,10 @@ public class Mechanism_League2 {
     public Action shooterSpinTo(double targetRPM){this.targetRPM = targetRPM; active_shooter = true; return new ShooterSpinTo();}
     public Action shooterPowerUp() { return new ShooterPowerUp(); }
     public Action shooterPowerDown() { return  new ShooterPowerDown(); }
-    public Action intakeIn() { return new IntakeIn(); }
-    public Action intakeSlow() {return new IntakeSlow(); }
+    public Action intakeIn() { return new OldIntakeIn(); }
+    public Action intakeSlow() {return new OldIntakeSlow(); }
     public Action intakeOut() { return new IntakeOut(); }
-    public Action transferIn() { return new TransferIn(); }
+    public Action transferIn() { return new OldTransferIn(); }
     public Action transferInFinal() { return new TransferInFinal(); }
 
     public Action transferSlow() { return new TransferSlow(); }
@@ -128,7 +128,7 @@ public class Mechanism_League2 {
         }
     }
 
-    public class IntakeIn implements Action {
+    public class OldIntakeIn implements Action {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
@@ -137,7 +137,7 @@ public class Mechanism_League2 {
         }
     }
 
-    public class IntakeSlow implements Action {
+    public class OldIntakeSlow implements Action {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
@@ -155,7 +155,7 @@ public class Mechanism_League2 {
     }
 
 
-    public class TransferIn implements Action {
+    public class OldTransferIn implements Action {
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {

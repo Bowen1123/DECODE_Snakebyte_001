@@ -30,6 +30,7 @@ public class Teleop_League3 extends LinearOpMode {
         Pose2d initPos = new Pose2d(0,0,0);
         MecanumDrive drive = new MecanumDrive(hardwareMap, initPos);
 
+        double shooterPower = 0.9;
         double intakePower = 0.8;
         double transferPower = 1;
 
@@ -39,6 +40,9 @@ public class Teleop_League3 extends LinearOpMode {
         waitForStart();
         while (opModeIsActive()){
             /// ----------------- Mechanism Controls -----------------
+            transferRamp.setPosition(0);
+
+
 
             if (gamepad2.x){
                 active_shooter = true;
@@ -47,12 +51,22 @@ public class Teleop_League3 extends LinearOpMode {
                 active_shooter = false;
             }
 
+            if (gamepad1.a){
+                shooterPower = 0.5;
+            } else if (gamepad1.b){
+                shooterPower = 0.65;
+            } else if (gamepad1.y){
+                shooterPower = 0.8;
+            } else if (gamepad1.x) {
+                shooterPower = .4;
+            }
+
             if (active_shooter){
 //                double power = shooter_pid.update();
 //                topShooter.setPower(power);
 //                bottomShooter.setPower(power);
-                topShooter.setPower(.8);
-                bottomShooter.setPower(.8);
+                topShooter.setPower(shooterPower);
+                bottomShooter.setPower(shooterPower);
 
             } else {
                 topShooter.setPower(0);
@@ -62,20 +76,21 @@ public class Teleop_League3 extends LinearOpMode {
             if (gamepad2.a){
                 transferGate.setPosition(.55);
             }
+            if (gamepad2.dpad_right){
+                transferRamp.setPosition(.32);
+            }
+
             if (gamepad2.b){
                 transferGate.setPosition(.25);
             }
 
-            if (gamepad2.dpad_up){
-                transferRamp.setPosition(1);
-            }
-            if (gamepad2.dpad_down){
-                transferRamp.setPosition(.7);
-            }
-
-            if (gamepad2.right_bumper){
+            if (gamepad2.right_bumper) {
                 intake.setPower(intakePower);
-            } else if (gamepad2.right_trigger > .2) {
+            } else if (gamepad1.right_bumper){
+                intake.setPower(intakePower);
+            } else if (gamepad2.right_trigger > 0.2) {
+                intake.setPower(-1);
+            } else if (gamepad1.right_trigger > 0.2){
                 intake.setPower(-1);
             } else {
                 intake.setPower(0);
@@ -95,11 +110,17 @@ public class Teleop_League3 extends LinearOpMode {
             ///  Drive ///
             drive.setDrivePowers(new PoseVelocity2d(
                     new Vector2d(
-                            -gamepad1.left_stick_y,
-                            -gamepad1.left_stick_x
+                            -gamepad1.left_stick_y * .7,
+                            -gamepad1.left_stick_x * .7
                     ),
-                    -gamepad1.right_stick_x
+                    -gamepad1.right_stick_x * .8
             ));
+
+
+            telemetry.addData("Shooter Power: ", shooterPower);
+            telemetry.update();
+
+
         }
     }
 

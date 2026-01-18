@@ -2,6 +2,7 @@ package org.firstinspires.ftc.meepmeeptesting;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.VelConstraint;
 import com.noahbres.meepmeep.MeepMeep;
 import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
@@ -17,29 +18,136 @@ public class MeepMeepTesting {
                 .setDimensions(15,15)
                 .build();
 
-        RoadRunnerBotEntity newBot = new DefaultBotBuilder(meepMeep)
+        RoadRunnerBotEntity league2Bot = new DefaultBotBuilder(meepMeep)
                 // Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
                 .setConstraints(50, 40, Math.PI, Math.PI, 15)
                 .setDimensions(15,15)
                 .build();
+        RoadRunnerBotEntity league3Bot = new DefaultBotBuilder(meepMeep)
+                // Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
+                .setConstraints(55, 45, Math.PI/2, Math.PI/2, 15)
+                .setDimensions(15,17)
+                .build();
 
         //blue_goal(myBot);
-        //blue_goal_new_gate(newBot);
-        //blue_goal_new_nogate(newBot);
-        //blue_far(newBot);
+        //blue_goal_new_gate(league2Bot);
+        //blue_goal_new_nogate(league2Bot);
+        //blue_far(league2Bot);
 
-        blue_goal_league2(newBot);
-        /// red_goal_league2(newBot);
-        /// blue_far_league2_far_spike(newBot);
-        /// red_far_league2_far_spike(newBot);
-        /// blue_far_league2_middle_spike(newBot);
+        blue_far_league3(league3Bot);
+
+        /// blue_goal_league2(league2Bot);
+        /// red_goal_league2(league2Bot);
+        /// blue_far_league2_far_spike(league2Bot);
+        /// red_far_league2_far_spike(league2Bot);
+        /// blue_far_league2_middle_spike(league2Bot);
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
                 .setBackgroundAlpha(0.95f)
-                .addEntity(newBot)
+                .addEntity(league3Bot)
                 .start();
     }
+
+    ///  League 3 ///
+
+    static void blue_far_league3(RoadRunnerBotEntity myBot){
+        Pose2d initialPose = new Pose2d(60,-12,Math.toRadians(200));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .setTangent(180)
+                .splineToLinearHeading(new Pose2d(60, -40, Math.toRadians(270)), Math.toRadians(270))
+                .build());
+    }
+
+    static void gate_blue_goal_league3(RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(-52,-52,Math.toRadians(225));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .lineToX(-12)
+
+                .setTangent(Math.toRadians(315)) // leave goal
+                .splineToLinearHeading(new Pose2d(12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270)) // get spike
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(180)) // to gate
+                .splineToConstantHeading(new Vector2d(0, -55), Math.toRadians(180))
+
+                .setTangent(Math.toRadians(90)) // to shoot
+                .splineToLinearHeading(new Pose2d(-12,-12,Math.toRadians(225)), Math.toRadians(135))
+
+                ///
+                .setTangent(Math.toRadians(315))
+                .splineToLinearHeading(new Pose2d(-12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-12,-12,Math.toRadians(225)), Math.toRadians(135))
+
+                ///
+                .setTangent(Math.toRadians(315))
+                .splineToLinearHeading(new Pose2d(36, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-12,-12,Math.toRadians(225)), Math.toRadians(135))
+
+
+                .setTangent(Math.toRadians(180))
+                .lineToX(-60)
+
+                .build());
+    }
+    static void basic_blue_goal_league3(RoadRunnerBotEntity myBot){
+
+        Pose2d initialPose = new Pose2d(-52,-52,Math.toRadians(225));
+
+        myBot.runAction(myBot.getDrive().actionBuilder(initialPose)
+                .lineToX(-12)
+
+
+                .setTangent(Math.toRadians(315))
+                .splineToLinearHeading(new Pose2d(-12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-12,-12,Math.toRadians(225)), Math.toRadians(90))
+
+                .setTangent(Math.toRadians(315))
+                .splineToLinearHeading(new Pose2d(12, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-12,-12,Math.toRadians(225)), Math.toRadians(135))
+
+                .setTangent(Math.toRadians(315))
+                .splineToLinearHeading(new Pose2d(36, -30, Math.toRadians(270)), Math.toRadians(270))
+
+                .setTangent(Math.toRadians(270))
+                .lineToY(-52, new TranslationalVelConstraint(16))
+
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-12,-12,Math.toRadians(225)), Math.toRadians(135))
+
+                .setTangent(Math.toRadians(180))
+                .lineToX(-60)
+
+                .build());
+    }
+
+
+
 
     ///  League 2 ///
     static void red_goal_league2 (RoadRunnerBotEntity myBot){
