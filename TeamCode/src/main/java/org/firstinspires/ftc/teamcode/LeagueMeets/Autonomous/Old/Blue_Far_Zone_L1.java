@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Competition.Autonomous.Old;
+package org.firstinspires.ftc.teamcode.LeagueMeets.Autonomous.Old;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
+import org.firstinspires.ftc.teamcode.LeagueMeets.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 @Disabled
 @Autonomous

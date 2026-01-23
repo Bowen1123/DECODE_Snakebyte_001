@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Competition.Autonomous.Pathing;
+package org.firstinspires.ftc.teamcode.LeagueMeets.Autonomous.Pathing;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
@@ -8,7 +8,7 @@ import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
+import org.firstinspires.ftc.teamcode.LeagueMeets.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous

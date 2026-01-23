@@ -1,5 +1,8 @@
-package org.firstinspires.ftc.teamcode.Competition;
+package org.firstinspires.ftc.teamcode.LeagueMeets;
 
+import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.PoseVelocity2d;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -8,6 +11,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp(name = "Turret_Test", group = "Test")
 public class Turret_Test extends LinearOpMode {
@@ -26,10 +30,12 @@ public class Turret_Test extends LinearOpMode {
     private static final double MAX_POWER = 0.75;
 
     // If your turret moves the wrong way, set this to -1
-    private static final double DIRECTION = 1.0;
+    private static final double DIRECTION = -1.0;
 
     @Override
     public void runOpMode() throws InterruptedException {
+
+        MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         turret = hardwareMap.get(CRServo.class, "turret");
@@ -79,6 +85,14 @@ public class Turret_Test extends LinearOpMode {
 
             // Apply command to turret
             turret.setPower(turretPowerCmd);
+
+            drive.setDrivePowers(new PoseVelocity2d(
+                    new Vector2d(
+                            -gamepad1.left_stick_y * .7,
+                            -gamepad1.left_stick_x * .7
+                    ),
+                    -gamepad1.right_stick_x * .8
+            ));
 
             // ---- Telemetry ----
             telemetry.addData("Has Target", hasTarget);

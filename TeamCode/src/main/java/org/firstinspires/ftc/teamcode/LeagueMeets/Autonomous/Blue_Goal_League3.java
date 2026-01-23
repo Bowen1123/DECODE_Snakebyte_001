@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Competition.Autonomous;
+package org.firstinspires.ftc.teamcode.LeagueMeets.Autonomous;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
@@ -9,24 +9,23 @@ import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.Competition.Mechanism_League2;
-import org.firstinspires.ftc.teamcode.Competition.Mechanism_League3;
+import org.firstinspires.ftc.teamcode.LeagueMeets.Mechanism_League3;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
-public class Red_Goal_League3 extends LinearOpMode {
-    private double initX = -52, initY = 52, initHeading = Math.toRadians(-225);
-    private double goalX = -17, goalY = 17, goalHeading = Math.toRadians(-220);
-    private double spikeX = -12 /*12*/ , spikeY = 27, spikeHeading = Math.toRadians(-270);
-    private double gateX = 0, gateY = 53, gateHeading = Math.toRadians(-180);
-    private double intakeSpikeY = 57, parkingX = -60;
+public class Blue_Goal_League3 extends LinearOpMode {
+    private double initX = -52, initY = -52, initHeading = Math.toRadians(225);
+    private double goalX = -17, goalY = -17, goalHeading = Math.toRadians(227);
+    private double spikeX = -11 /*12*/ , spikeY = -27, spikeHeading = Math.toRadians(270);
+    private double gateX = 0, gateY = -53, gateHeading = Math.toRadians(180);
+    private double intakeSpikeY = -58, parkingX = -60;
 
     ///  Tangents ///
-    double leaveGoalTangent = -Math.toRadians(315);
-    double getSpikeTangent = -Math.toRadians(270);
-    double toGateTangent = -Math.toRadians(180);
-    double toShootTangent = -Math.toRadians(90);
-    double parkingTangent = -Math.toRadians(180);
+    double leaveGoalTangent = Math.toRadians(315);
+    double getSpikeTangent = Math.toRadians(270);
+    double toGateTangent = Math.toRadians(180);
+    double toShootTangent = Math.toRadians(90);
+    double parkingTangent = Math.toRadians(180);
 
     private TrajectoryActionBuilder start, spike2, spike1, spike3, gate, goal1, goal2, goal3, leave;
 
@@ -50,7 +49,7 @@ public class Red_Goal_League3 extends LinearOpMode {
         Pose2d afterspike1Pose = new Pose2d( spikeX, spikeY, spikeHeading);
         Pose2d afterspike3Pose = new Pose2d( spikeX + (2 * spike_x_gap), spikeY, spikeHeading);
 
-        TranslationalVelConstraint slow = new TranslationalVelConstraint(14);
+        TranslationalVelConstraint slow = new TranslationalVelConstraint(12);
 
 
         ///  Trajectories ///
@@ -73,7 +72,7 @@ public class Red_Goal_League3 extends LinearOpMode {
                 .setTangent(toShootTangent)
                 .splineToLinearHeading(goalPose, goalPose.heading.toDouble());
 
-        TrajectoryActionBuilder toGoal2noGate = drive.actionBuilder(afterspike2Pose)
+        TrajectoryActionBuilder toGoal2noGate = drive.actionBuilder(gatePose)
                 .setTangent(toShootTangent)
                 .splineToLinearHeading(goalPose, goalPose.heading.toDouble());
 
