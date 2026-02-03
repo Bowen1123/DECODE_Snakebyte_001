@@ -26,7 +26,7 @@ public class MeepMeepTesting {
         RoadRunnerBotEntity league3Bot = new DefaultBotBuilder(meepMeep)
                 // Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
                 .setConstraints(55, 45, Math.PI/2, Math.PI/2, 15)
-                .setDimensions(15,17)
+                .setDimensions(15,15)
                 .build();
 
         //blue_goal(myBot);
@@ -34,7 +34,7 @@ public class MeepMeepTesting {
         //blue_goal_new_nogate(league2Bot);
         //blue_far(league2Bot);
 
-        blue_far_league3(league3Bot);
+        gate_blue_goal_league3(league3Bot);
 
         /// blue_goal_league2(league2Bot);
         /// red_goal_league2(league2Bot);
@@ -42,7 +42,7 @@ public class MeepMeepTesting {
         /// red_far_league2_far_spike(league2Bot);
         /// blue_far_league2_middle_spike(league2Bot);
 
-        meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
+        meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_LIGHT)
                 .setDarkMode(true)
                 .setBackgroundAlpha(0.95f)
                 .addEntity(league3Bot)

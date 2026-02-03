@@ -17,7 +17,6 @@ import org.firstinspires.ftc.teamcode.LeagueMeets.Controller_PIDF_Shooter_Close;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp
-@Disabled
 public class BowenTesting extends LinearOpMode {
 
     private static final double TICKS_PER_REV = 28.0;
@@ -31,13 +30,15 @@ public class BowenTesting extends LinearOpMode {
     private IMU imu;
     private double SPEED_MULTIPLIER = 1;
     private double RAMP_EXTEND_LIMIT, RAMP_RETRACT_LIMIT;
-    private boolean pastA = false, pastB = false;
+    private boolean pastX = false, pastB = false;
 
     @Override
     public void runOpMode() throws InterruptedException {
         initialize();
         Pose2d initPos = new Pose2d(0,0,0);
         MecanumDrive drive = new MecanumDrive(hardwareMap, initPos);
+
+        S_CloseShooterPID shooterPID = new S_CloseShooterPID();
 
         double shooterPower = 0.9;
         double intakePower = 0.8;
@@ -49,55 +50,43 @@ public class BowenTesting extends LinearOpMode {
         double topShooterPos = 0;
         double lastTopShooterPos = 0;
 
+        double targetRPM = 2000;
         waitForStart();
         while (opModeIsActive()){
-            topShooterPos = topShooter.getCurrentPosition();
 
-            long now = System.nanoTime();
-            int currentPos = topShooter.getCurrentPosition();
 
-            if (lastTimeNs != 0) {
-                double deltaTimeSec = (now - lastTimeNs) / 1e9;
-                int deltaTicks = currentPos - lastEncoderPos;
 
-                double revs = deltaTicks / TICKS_PER_REV;
-                topShooterRPM = (revs / deltaTimeSec) * 60.0;
+            if (targetRPM < 0) targetRPM = 0;
+            if (targetRPM > S_CloseShooterPID.CFG_maxTargetFlywheelRPM) {
+                targetRPM = S_CloseShooterPID.CFG_maxTargetFlywheelRPM;
             }
 
-            lastEncoderPos = currentPos;
-            lastTimeNs = now;
+            shooterPID.setTargetFlywheelRPM(targetRPM);
 
-            if (gamepad1.x){
-                active_shooter = true;
-            } else if (gamepad1.y) {
-                active_shooter = false;
+            double ticksPerSec = topShooter.getVelocity();
+            double measuredFlywheelRPM = S_CloseShooterPID.motorTicksPerSecToFlywheelRPM(ticksPerSec);
+
+            double powerCmd;
+            if (targetRPM > 0) {
+                powerCmd = shooterPID.update(ticksPerSec);
+            } else {
+                powerCmd = 0.0;
             }
 
-            if (active_shooter) {
-                topShooter.setPower(1);
-                bottomShooter.setPower(1);
+
+            if (gamepad1.x && !pastX){
+                active_shooter = !active_shooter;
+            }
+
+            if (active_shooter){
+                topShooter.setPower(powerCmd);
+                bottomShooter.setPower(powerCmd);
+                transferGate.setPosition(.9);
             } else {
                 topShooter.setPower(0);
                 bottomShooter.setPower(0);
+                transferGate.setPosition(.7);
             }
-
-            if (gamepad1.right_bumper){
-                intake.setPower(.75);
-            } else if (gamepad1.left_bumper){
-                intake.setPower(-.75);
-            } else {
-                intake.setPower(0);
-            }
-
-            if (gamepad1.right_trigger > 0.2){
-                transfer.setPower(1);
-            } else if (gamepad1.left_trigger > 0.2){
-                transfer.setPower(-.5);
-            } else {
-                transfer.setPower(0);
-            }
-
-
 
 
             drive.setDrivePowers(new PoseVelocity2d(
@@ -108,8 +97,11 @@ public class BowenTesting extends LinearOpMode {
                     -gamepad1.right_stick_x * .8
             ));
 
-            telemetry.addData("Top Shooter RPM", topShooterRPM);
-            telemetry.addData("Flywheel RPM: ", topShooterRPM * 1.5);
+
+
+            pastX = gamepad1.x;
+            telemetry.addData("Top Shooter Power", powerCmd);
+            telemetry.addData("Motor RPM: ", (topShooter.getVelocity()));
             telemetry.update();
 
         }

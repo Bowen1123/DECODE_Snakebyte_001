@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp
 public class A_ShooterTuning extends OpMode {
@@ -14,6 +15,8 @@ public class A_ShooterTuning extends OpMode {
     private DcMotorEx topShooter;
     private DcMotorEx bottomShooter;
     private DcMotorEx intake, transfer;
+
+    private Servo transferGate;
 
     private final S_CloseShooterPID shooterPID = new S_CloseShooterPID();
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -33,6 +36,8 @@ public class A_ShooterTuning extends OpMode {
         bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         transfer = hardwareMap.get(DcMotorEx.class, "transfer");
+
+        transferGate = hardwareMap.get(Servo.class, "transferGate" );
 
 
         topShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -108,8 +113,11 @@ public class A_ShooterTuning extends OpMode {
         double powerCmd;
         if (shooterEnabled && targetRPM > 0) {
             powerCmd = shooterPID.update(ticksPerSec);
+            transferGate.setPosition(.75);
+
         } else {
             powerCmd = 0.0;
+            transferGate.setPosition(.6);
         }
 
         topShooter.setPower(powerCmd);
