@@ -42,7 +42,7 @@ public class MeepMeepTesting {
         /// red_far_league2_far_spike(league2Bot);
         /// blue_far_league2_middle_spike(league2Bot);
 
-        meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_LIGHT)
+        meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
                 .setBackgroundAlpha(0.95f)
                 .addEntity(league3Bot)

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.LeagueChamp;
+package org.firstinspires.ftc.teamcode.LeagueChampNotComp;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -10,6 +10,9 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.Range;
 
@@ -19,29 +22,29 @@ import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Config
 @TeleOp
-public class A_TwoStagePipeline extends LinearOpMode {
+public class Blue_ShootOnMove extends LinearOpMode {
 
-    public static double goalX = 51.0;
-    public static double goalY = 41.0;
+    public static double goalX = -72;
+    public static double goalY = -72;
 
     // Odom
-    public static double ODOM_kP = 1.2;
+    public static double ODOM_kP = 1.4;
     public static double ODOM_kD = 0.05;
     public static double ODOM_kS_min = 0.03;
     public static double ODOM_kS_max = 0.12;
     public static double ODOM_kS_fullAtDeg = 12.0;
     public static double ODOM_deadbandDeg = 1.0;
-    public static double ODOM_MIN_MOVE_POWER = 0.1;
+    public static double ODOM_MIN_MOVE_POWER = 0.2;
     public static double ODOM_MAX_POWER = 0.60;
 
     // Limelight
-    public static double LL_kP = 0.02;
-    public static double LL_kD = 0.0005;
-    public static double LL_kS_min = 0.02;
+    public static double LL_kP = 0.03;
+    public static double LL_kD = 0.0009;
+    public static double LL_kS_min = 0.04;
     public static double LL_kS_max = 0.12;
     public static double LL_kS_fullAtDeg = 12.0;
-    public static double LL_deadbandDeg = .65;
-    public static double LL_MIN_MOVE_POWER = 0.1;
+    public static double LL_deadbandDeg = 1;
+    public static double LL_MIN_MOVE_POWER = 0.2;
     public static double LL_MAX_POWER = 0.52;
 
     // Turret IMU
@@ -59,8 +62,11 @@ public class A_TwoStagePipeline extends LinearOpMode {
     private IMU turretImu;
     private Limelight3A limelight;
 
+    private DcMotorEx intake, topShooter, bottomShooter, transfer;
+
     private boolean lastA = false;
     private boolean lastB = false;
+    private boolean lastX = false;
     private boolean trackingOn = false;
 
     private enum Tracking { LOCK_TO_DRIVE, ODOMETRY, LIMELIGHT }
@@ -72,6 +78,10 @@ public class A_TwoStagePipeline extends LinearOpMode {
     private boolean limelightOn = false;
     private long lastTargetSeenNs = 0;
 
+
+    // Shoot on Move
+    boolean active_shooter = false;
+
     @Override
     public void runOpMode() throws InterruptedException {
         Pose2d startPose = new Pose2d(0, 0, 0);
@@ -81,12 +91,50 @@ public class A_TwoStagePipeline extends LinearOpMode {
         turretImu = hardwareMap.get(IMU.class, "turretImu");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
+        topShooter = hardwareMap.get(DcMotorEx.class, "topShooter");
+        bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
+        transfer = hardwareMap.get(DcMotorEx.class, "transfer");
+
+
+
+
+        topShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        bottomShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+        topShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        bottomShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Adjust if motors fight each other
+        topShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        bottomShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        transfer.setDirection(DcMotorSimple.Direction.REVERSE);
+
+
+
+        S_CloseShooterPID shooterPID = new S_CloseShooterPID();
+        double targetRPM = 3000;     // flywheel RPM target
+        double measuredFlywheelRPM = 0;
+
         turretImu.resetYaw();
         telemetry.setMsTransmissionInterval(11);
+
 
         waitForStart();
 
         while (opModeIsActive()) {
+
+            boolean x = gamepad1.x;
+
+            if (x && !lastX) {
+                active_shooter = !active_shooter;
+            }
+            lastX = x;
+
+
+
+            ///  Drive ///
             drive.updatePoseEstimate();
             Pose2d pose = drive.localizer.getPose();
 
@@ -98,6 +146,26 @@ public class A_TwoStagePipeline extends LinearOpMode {
                     Range.clip(-gamepad1.right_stick_x, -0.6, 0.6)
             ));
 
+
+            if (gamepad1.right_bumper){
+                intake.setPower(.85);
+            } else if (gamepad1.left_bumper) {
+                intake.setPower(-.7);
+            } else {
+                intake.setPower(0);
+            }
+
+            if (gamepad1.right_trigger > 0.2){
+                transfer.setPower(1);
+            } else if (gamepad1.left_trigger > 0.2){
+                transfer.setPower(-.7);
+            } else {
+                transfer.setPower(0);
+            }
+
+
+
+            ///  Turret Stuff ///
             boolean a = gamepad1.a;
             boolean b = gamepad1.b;
 
@@ -202,6 +270,37 @@ public class A_TwoStagePipeline extends LinearOpMode {
 
             }
 
+
+            if (active_shooter){
+                // Clamp target
+//                if (targetRPM < 0) targetRPM = 0;
+//                if (targetRPM > CloseShooterPID.CFG_maxTargetFlywheelRPM) {
+//                    targetRPM = CloseShooterPID.CFG_maxTargetFlywheelRPM;
+//                }
+
+                targetRPM = S_Adaptive_Equations.getFlywheelRPM(distanceToGoal);
+
+                shooterPID.setTargetFlywheelRPM(targetRPM);
+
+                double ticksPerSec = topShooter.getVelocity();
+                measuredFlywheelRPM = S_CloseShooterPID.motorTicksPerSecToFlywheelRPM(ticksPerSec);
+
+                double powerCmd;
+                if (targetRPM > 0) {
+                    powerCmd = shooterPID.update(ticksPerSec);
+                } else {
+                    powerCmd = 0.0;
+                }
+
+                topShooter.setPower(powerCmd);
+                bottomShooter.setPower(powerCmd);
+
+            } else {
+                topShooter.setPower(0);
+                bottomShooter.setPower(0);
+            }
+
+
             turret.setPower(turretPower);
 
             telemetry.addData("Tracking", trackingOn);
@@ -237,6 +336,8 @@ public class A_TwoStagePipeline extends LinearOpMode {
                 telemetry.addData("LL", "Stopped");
             }
 
+            telemetry.addData("/nFlywheel RPM:", measuredFlywheelRPM);
+            telemetry.addData("Active_shooter: ", active_shooter);
             telemetry.update();
         }
 

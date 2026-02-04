@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.LeagueChamp;
+package org.firstinspires.ftc.teamcode.LeagueChampNotComp;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;

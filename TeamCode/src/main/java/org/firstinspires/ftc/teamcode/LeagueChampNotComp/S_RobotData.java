@@ -1,6 +1,4 @@
-package org.firstinspires.ftc.teamcode.LeagueChamp;
-
-import com.acmerobotics.roadrunner.Pose2d;
+package org.firstinspires.ftc.teamcode.LeagueChampNotComp;
 
 public class S_RobotData {
     public static double blue_robotX = 0;

@@ -1,51 +1,88 @@
 package org.firstinspires.ftc.teamcode.LeagueChamp;
 
-import com.acmerobotics.dashboard.config.Config;
+
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.LeagueChampNotComp.S_Adaptive_Equations;
+import org.firstinspires.ftc.teamcode.LeagueChampNotComp.S_CloseShooterPID;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
-@Config
 @TeleOp
-public class Blue_ShootOnMove extends LinearOpMode {
+public class A_ShootingTeleop extends LinearOpMode {
 
-    public static double goalX = -72;
-    public static double goalY = -72;
+    private DcMotorEx leftFront, leftBack, rightFront, rightBack;
+    private DcMotorEx intake, transfer, topShooter, bottomShooter;
+    private IMU imu, turretImu;
+    private Servo transferGate, shooterRamp;
+    private CRServo turret;
+    private Limelight3A limelight;
+    private ColorSensor topColor, bottomColor;
+
+    /// Boolean values
+    private boolean lastA1 = false, lastB1 = false, lastX1 = false, lastY1 = false;
+    private boolean lastA2 = false, lastB2 = false, lastX2 = false, lastY2 = false;
+    // private boolean a2 = false, b2 = false, x2 = false, y2 = false;
+    private boolean active_shooter = false;
+
+    ///  Preset Values
+    private final double INT_shooter_power = 0.4, INT_transfer_power = 0.8, INT_intake_power = .7, INT_dt_max_power = 0.65;
+    private final double SH_shooter_power = 1, SH_transfer_power = .8, SH_intake_power = .5, SH_dt_max_power = 0.4;
+    private double shooter_power = 0, transfer_power = 0, intake_power = 0, dt_max_power = 0;
+
+    private double transferGateOpen = 0.75, transferGateClose = 0.6;
+
+    ///  MODES ///
+    private enum POWER_MODE {INTAKE, SHOOT, ENDGAME};
+    private POWER_MODE powerMode = POWER_MODE.INTAKE;
+
+    /// Positions
+    private Pose2d robot_pose = new Pose2d(0,0,Math.toRadians(0));
+    private double blue_goal_x = -70, blue_goal_y = -65;
+
+    // X and Y are prob flipped?
+
+    public static double goalX = 50;
+    public static double goalY = 50;
 
     // Odom
-    public static double ODOM_kP = 1.4;
-    public static double ODOM_kD = 0.05;
-    public static double ODOM_kS_min = 0.03;
+    public static double ODOM_kP = .98;
+    public static double ODOM_kD = 0.085;
+    public static double ODOM_kS_min = 0.02;
     public static double ODOM_kS_max = 0.12;
     public static double ODOM_kS_fullAtDeg = 12.0;
     public static double ODOM_deadbandDeg = 1.0;
-    public static double ODOM_MIN_MOVE_POWER = 0.2;
-    public static double ODOM_MAX_POWER = 0.60;
+    public static double ODOM_MIN_MOVE_POWER = 0.04;
+    public static double ODOM_MAX_POWER = 0.45;
 
     // Limelight
-    public static double LL_kP = 0.03;
-    public static double LL_kD = 0.0009;
-    public static double LL_kS_min = 0.04;
+    public static double LL_kP = 0.018;
+    public static double LL_kD = 0.00085;
+    public static double LL_kS_min = 0.02;
     public static double LL_kS_max = 0.12;
     public static double LL_kS_fullAtDeg = 12.0;
-    public static double LL_deadbandDeg = 1;
-    public static double LL_MIN_MOVE_POWER = 0.2;
-    public static double LL_MAX_POWER = 0.52;
+    public static double LL_deadbandDeg = .65;
+    public static double LL_MIN_MOVE_POWER = 0.08;
+    public static double LL_MAX_POWER = 0.45;
 
     // Turret IMU
     public static double turretOffsetRad = 0.0;
@@ -57,119 +94,139 @@ public class Blue_ShootOnMove extends LinearOpMode {
     // tolerance
     public static double limelightArmDeg = 1.4;
     public static double llLostTimeoutSec = 0.15;
-
-    private CRServo turret;
-    private IMU turretImu;
-    private Limelight3A limelight;
-
-    private DcMotorEx intake, topShooter, bottomShooter, transfer;
-
-    private boolean lastA = false;
-    private boolean lastB = false;
-    private boolean lastX = false;
+    ///  TRACKING
     private boolean trackingOn = false;
-
     private enum Tracking { LOCK_TO_DRIVE, ODOMETRY, LIMELIGHT }
     private Tracking mode = Tracking.LOCK_TO_DRIVE;
-
     private double lastErrorRad = 0.0;
     private long lastTimeNs = 0;
 
     private boolean limelightOn = false;
     private long lastTargetSeenNs = 0;
 
-
-    // Shoot on Move
-    boolean active_shooter = false;
+    ///  Shooting
+    private double targetRPM = 3000;
+    private double distanceToGoal = 0;
+    private final S_CloseShooterPID shooterPID = new S_CloseShooterPID();
+    private final FtcDashboard dashboard = FtcDashboard.getInstance();
 
     @Override
     public void runOpMode() throws InterruptedException {
-        Pose2d startPose = new Pose2d(0, 0, 0);
-        MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
+        initialize();
+        initializeServo();
 
-        turret = hardwareMap.get(CRServo.class, "turret");
-        turretImu = hardwareMap.get(IMU.class, "turretImu");
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-
-        topShooter = hardwareMap.get(DcMotorEx.class, "topShooter");
-        bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
-        intake = hardwareMap.get(DcMotorEx.class, "intake");
-        transfer = hardwareMap.get(DcMotorEx.class, "transfer");
-
-
-
-
-        topShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        bottomShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        topShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        bottomShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        // Adjust if motors fight each other
-        topShooter.setDirection(DcMotorSimple.Direction.REVERSE);
-        bottomShooter.setDirection(DcMotorSimple.Direction.REVERSE);
-        intake.setDirection(DcMotorSimple.Direction.REVERSE);
-        transfer.setDirection(DcMotorSimple.Direction.REVERSE);
-
-
-
-        S_CloseShooterPID shooterPID = new S_CloseShooterPID();
-        double targetRPM = 3000;     // flywheel RPM target
-        double measuredFlywheelRPM = 0;
-
-        turretImu.resetYaw();
-        telemetry.setMsTransmissionInterval(11);
+        MecanumDrive drive = new MecanumDrive(hardwareMap, robot_pose);
 
 
         waitForStart();
+        while (opModeIsActive()){
+            switch (powerMode) {
 
-        while (opModeIsActive()) {
+                ///  MODE DETERMINATION
+                case INTAKE:
+                    intake_power = INT_intake_power;
+                    shooter_power = INT_shooter_power;
+                    transfer_power = INT_transfer_power;
+                    dt_max_power = INT_dt_max_power;
 
-            boolean x = gamepad1.x;
+                    transferGate.setPosition(transferGateClose);
 
-            if (x && !lastX) {
-                active_shooter = !active_shooter;
+                    break;
+                case SHOOT:
+                    intake_power = SH_intake_power;
+                    shooter_power = SH_shooter_power;
+                    transfer_power = SH_transfer_power;
+                    dt_max_power = SH_dt_max_power;
+
+                    // active_shooter = true;
+
+                    // transferGate.setPosition(transferGateOpen);
+
+                    break;
+                case ENDGAME:
+                    intake_power = 0.85;
+                    shooter_power = 1;
+                    transfer_power = 1;
+                    dt_max_power = 1;
             }
-            lastX = x;
 
 
-
-            ///  Drive ///
-            drive.updatePoseEstimate();
-            Pose2d pose = drive.localizer.getPose();
-
-            drive.setDrivePowers(new PoseVelocity2d(
-                    new Vector2d(
-                            Range.clip(-gamepad1.left_stick_y, -0.6, 0.6),
-                            Range.clip(-gamepad1.left_stick_x, -0.6, 0.6)
-                    ),
-                    Range.clip(-gamepad1.right_stick_x, -0.6, 0.6)
-            ));
-
-
-            if (gamepad1.right_bumper){
-                intake.setPower(.85);
-            } else if (gamepad1.left_bumper) {
-                intake.setPower(-.7);
+            ///  INTAKE AND TRANSFER
+            if (gamepad1.right_bumper || gamepad2.right_bumper){
+                intake.setPower(intake_power);
+                transfer.setPower(transfer_power);
+            } else if (gamepad1.left_bumper || gamepad2.left_bumper) {
+                intake.setPower(-intake_power);
+                transfer.setPower(-transfer_power);
             } else {
                 intake.setPower(0);
-            }
-
-            if (gamepad1.right_trigger > 0.2){
-                transfer.setPower(1);
-            } else if (gamepad1.left_trigger > 0.2){
-                transfer.setPower(-.7);
-            } else {
                 transfer.setPower(0);
             }
 
+            shooterRamp.setPosition(S_Adaptive_Equations.getRampPos(distanceToGoal));
 
 
-            ///  Turret Stuff ///
-            boolean a = gamepad1.a;
-            boolean b = gamepad1.b;
+            ///  CHANGE MODES
+//            if (gamepad2.a && !lastA2){
+//                powerMode = POWER_MODE.INTAKE;
+//            }
+//            if (gamepad2.b && !lastB2){
+//                powerMode = POWER_MODE.SHOOT;
+//            }
+//            if (gamepad2.x && !lastX2){
+//                powerMode = POWER_MODE.ENDGAME;
+//            }
 
-            if (a && !lastA) {
+
+
+            ///  Shoot
+            if (gamepad2.xWasPressed() || gamepad1.xWasPressed()) {
+                active_shooter = !active_shooter;
+                shooterPID.reset(); // clean start/stop
+            }
+
+            targetRPM = S_Adaptive_Equations.getFlywheelRPM(distanceToGoal);
+
+            // Clamp target
+            if (targetRPM < 0) targetRPM = 0;
+            if (targetRPM > S_CloseShooterPID.CFG_maxTargetFlywheelRPM) {
+                targetRPM = S_CloseShooterPID.CFG_maxTargetFlywheelRPM;
+            }
+
+            shooterPID.setTargetFlywheelRPM(targetRPM);
+
+            // Read encoder velocity (ticks/sec) from topShooter
+            double ticksPerSec = topShooter.getVelocity();
+            double measuredFlywheelRPM = S_CloseShooterPID.motorTicksPerSecToFlywheelRPM(ticksPerSec);
+
+            double powerCmd;
+            if (active_shooter && targetRPM > 0) {
+                powerCmd = shooterPID.update(ticksPerSec);
+                transferGate.setPosition(.75);
+
+            } else {
+                powerCmd = 0.0;
+                transferGate.setPosition(.6);
+            }
+
+            topShooter.setPower(powerCmd);
+            bottomShooter.setPower(powerCmd);
+
+
+
+            ///  DRIVE
+            drive.updatePoseEstimate();
+            Pose2d pose = drive.localizer.getPose();
+            drive.setDrivePowers(new PoseVelocity2d(
+                    new Vector2d(
+                            Range.clip(-gamepad1.left_stick_y, -dt_max_power, dt_max_power),
+                            Range.clip(-gamepad1.left_stick_x, -dt_max_power, dt_max_power)
+                    ),
+                    Range.clip(-gamepad1.right_stick_x, -dt_max_power, dt_max_power)
+            ));
+
+            ///  TRACKING AND SHOOTING
+            if (gamepad1.a && !lastA1) {
                 trackingOn = !trackingOn;
 
                 if (trackingOn) {
@@ -184,15 +241,13 @@ public class Blue_ShootOnMove extends LinearOpMode {
                     stopLimelight();
                 }
             }
-            lastA = a;
 
-            if (b && !lastB) {
+            if (gamepad1.b && !lastB1) {
                 trackingOn = false;
                 mode = Tracking.LOCK_TO_DRIVE;
                 resetDerivative();
                 stopLimelight();
             }
-            lastB = b;
 
             double robotX = pose.position.x;
             double robotY = pose.position.y;
@@ -200,8 +255,9 @@ public class Blue_ShootOnMove extends LinearOpMode {
 
             double turretYawRad = getTurretYawRad() + turretOffsetRad;
 
-            double targetAngleRad = Math.atan2(goalY - robotY, goalX - robotX);
-            double distanceToGoal = Math.hypot(goalX - robotX, goalY - robotY);
+            double targetAngleRad = Math.atan2(goalX - robotX, goalY - robotY); //goalY - robotY, goalX - robotX //goalX - robotX, goalY - robotY
+            distanceToGoal = Math.hypot(goalX + robotX, goalY + robotY);
+            //distanceToGoal = Math.sqrt(Math.pow(goalX - robotX, 2), Math.pow(goalY - robotY, 2));
 
             if (!trackingOn) {
                 mode = Tracking.LOCK_TO_DRIVE;
@@ -209,7 +265,6 @@ public class Blue_ShootOnMove extends LinearOpMode {
                 if (mode == Tracking.ODOMETRY) {
                     double errorRad = wrapAngle(targetAngleRad - turretYawRad);
                     double errorDeg = Math.toDegrees(Math.abs(errorRad));
-
                     if (errorDeg <= limelightArmDeg) {
                         startLimelight();
 
@@ -235,73 +290,33 @@ public class Blue_ShootOnMove extends LinearOpMode {
                     }
                 }
             }
-
             double turretPower = 0.0;
-
             if (mode == Tracking.LOCK_TO_DRIVE) {
-
                 double errorRad = wrapAngle(robotHeadingRad - turretYawRad);
                 double errorRate = derivative(errorRad);
                 turretPower = odomCmd(errorRad, errorRate);
-
             } else if (mode == Tracking.ODOMETRY) {
-
                 double errorRad = wrapAngle(targetAngleRad - turretYawRad);
                 double errorRate = derivative(errorRad);
                 turretPower = odomCmd(errorRad, errorRate);
-
             } else if (mode == Tracking.LIMELIGHT) {
-
                 LLResult result = limelight.getLatestResult();
-
                 if (result != null && result.isValid()) {
-
                     double errorRad = Math.toRadians(-result.getTx());
                     double errorRate = derivative(errorRad);
                     turretPower = limelightCmd(errorRad, errorRate);
-
                 } else {
-
                     double errorRad = wrapAngle(targetAngleRad - turretYawRad);
                     double errorRate = derivative(errorRad);
                     turretPower = odomCmd(errorRad, errorRate);
-
                 }
-
             }
-
-
-            if (active_shooter){
-                // Clamp target
-//                if (targetRPM < 0) targetRPM = 0;
-//                if (targetRPM > CloseShooterPID.CFG_maxTargetFlywheelRPM) {
-//                    targetRPM = CloseShooterPID.CFG_maxTargetFlywheelRPM;
-//                }
-
-                targetRPM = S_Adaptive_Equations.getFlywheelRPM(distanceToGoal);
-
-                shooterPID.setTargetFlywheelRPM(targetRPM);
-
-                double ticksPerSec = topShooter.getVelocity();
-                measuredFlywheelRPM = S_CloseShooterPID.motorTicksPerSecToFlywheelRPM(ticksPerSec);
-
-                double powerCmd;
-                if (targetRPM > 0) {
-                    powerCmd = shooterPID.update(ticksPerSec);
-                } else {
-                    powerCmd = 0.0;
-                }
-
-                topShooter.setPower(powerCmd);
-                bottomShooter.setPower(powerCmd);
-
-            } else {
-                topShooter.setPower(0);
-                bottomShooter.setPower(0);
-            }
-
-
             turret.setPower(turretPower);
+
+
+
+
+            ///  Telemetry
 
             telemetry.addData("Tracking", trackingOn);
             telemetry.addData("Mode", mode);
@@ -336,14 +351,82 @@ public class Blue_ShootOnMove extends LinearOpMode {
                 telemetry.addData("LL", "Stopped");
             }
 
-            telemetry.addData("/nFlywheel RPM:", measuredFlywheelRPM);
-            telemetry.addData("Active_shooter: ", active_shooter);
-            telemetry.update();
-        }
 
-//        turret.setPower(0.0);
-//        stopLimelight();
+            telemetry.addData("shooterRamp", shooterRamp.getPosition());
+
+            telemetry.update();
+
+            ///  UPDATE GAME PADS ST
+            lastA1 = gamepad1.a;
+            lastB1 = gamepad1.b;
+            lastX1 = gamepad1.x;
+            lastY1 = gamepad1.y;
+
+            lastA2 = gamepad2.a;
+            lastB2 = gamepad2.b;
+            lastX2 = gamepad2.x;
+            lastY2 = gamepad2.y;
+        }
     }
+
+
+
+
+    private void initializeServo() {
+        turret = hardwareMap.get(CRServo.class, "turret");
+
+        transferGate = hardwareMap.get(Servo.class, "transferGate");
+        shooterRamp = hardwareMap.get(Servo.class, "shooterRamp");
+    }
+
+    private void initialize(){
+        leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
+        leftBack = hardwareMap.get(DcMotorEx.class, "leftBack");
+        rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
+        rightBack = hardwareMap.get(DcMotorEx.class, "rightBack");
+        transfer = hardwareMap.get(DcMotorEx.class, "transfer");
+        topShooter = hardwareMap.get(DcMotorEx.class, "topShooter");
+        bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
+
+
+        topShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        bottomShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        transfer.setDirection(DcMotorSimple.Direction.REVERSE);
+
+
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        topShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        topShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        bottomShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+
+        imu = hardwareMap.get(IMU.class, "imu");
+        IMU.Parameters params = new IMU.Parameters(
+                new RevHubOrientationOnRobot(
+                        RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                        RevHubOrientationOnRobot.UsbFacingDirection.UP
+                )
+        );
+        imu.initialize(params);
+        imu.resetYaw();
+
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        turretImu = hardwareMap.get(IMU.class, "turretImu");
+        turretImu.resetYaw();
+
+
+        shooterPID.reset();
+    }
+
 
     private double odomCmd(double errorRad, double errorRateRadPerSec) {
         double absErr = Math.abs(errorRad);
@@ -435,3 +518,5 @@ public class Blue_ShootOnMove extends LinearOpMode {
         limelightOn = false;
     }
 }
+
+

@@ -4,7 +4,6 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -13,7 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.LeagueMeets.Controller_PIDF_Shooter_Close;
+import org.firstinspires.ftc.teamcode.LeagueChampNotComp.S_CloseShooterPID;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp
