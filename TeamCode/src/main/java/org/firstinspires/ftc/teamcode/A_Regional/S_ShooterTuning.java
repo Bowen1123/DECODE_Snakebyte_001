@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.LeagueChamp;
+package org.firstinspires.ftc.teamcode.A_Regional;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -9,10 +9,10 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.LeagueChampNotComp.S_CloseShooterPID;
+import org.firstinspires.ftc.teamcode.LeagueChampThursday.S_CloseShooterPID;
 
 @TeleOp
-public class A_ShooterTuning extends OpMode {
+public class S_ShooterTuning extends OpMode {
 
     private DcMotorEx topShooter;
     private DcMotorEx bottomShooter;
@@ -20,7 +20,7 @@ public class A_ShooterTuning extends OpMode {
 
     private Servo transferGate;
 
-    private final S_CloseShooterPID shooterPID = new S_CloseShooterPID();
+    private final S_CloseShooterPID_Slew shooterPID = new S_CloseShooterPID_Slew();
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
 
 
@@ -31,6 +31,8 @@ public class A_ShooterTuning extends OpMode {
     private boolean lastA = false;
     private boolean lastB = false;
     private boolean lastX = false;
+    private final double shooter_power = 0.4, transfer_power = 1, intake_power = .8, dt_max_power = 0.62;
+    private double gateOpen = 0.75, gateClose = 0.61;
 
     @Override
     public void init() {
@@ -39,7 +41,7 @@ public class A_ShooterTuning extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         transfer = hardwareMap.get(DcMotorEx.class, "transfer");
 
-        transferGate = hardwareMap.get(Servo.class, "transferGate" );
+        //transferGate = hardwareMap.get(Servo.class, "transferGate" );
 
 
         topShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -47,6 +49,7 @@ public class A_ShooterTuning extends OpMode {
 
         topShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         bottomShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        bottomShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Adjust if motors fight each other
         topShooter.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -72,20 +75,22 @@ public class A_ShooterTuning extends OpMode {
         boolean b = gamepad1.b;
         boolean x = gamepad1.x;
 
-        if (gamepad1.right_bumper){
-            intake.setPower(.9);
-        } else if (gamepad1.left_bumper) {
-            intake.setPower(-.7);
+        if (gamepad1.right_trigger > 0.2 /*|| gamepad2.right_trigger > 0.2*/) {
+            intake.setPower(intake_power);
+            transfer.setPower(transfer_power);
+            //transferGate.setPosition(gateOpen);
+        } else if (gamepad1.right_bumper /*|| gamepad2.right_bumper*/){
+            intake.setPower(intake_power);
+            transfer.setPower(transfer_power * .6);
+            //transferGate.setPosition(gateClose);
+        } else if (gamepad1.left_bumper /*|| gamepad2.left_bumper*/) {
+            intake.setPower(-intake_power);
+            transfer.setPower(-transfer_power);
+            //transferGate.setPosition(gateClose);
         } else {
             intake.setPower(0);
-        }
-
-        if (gamepad1.right_trigger > 0.2){
-            transfer.setPower(1);
-        } else if (gamepad1.left_trigger > 0.2){
-            transfer.setPower(-.7);
-        } else {
             transfer.setPower(0);
+            //transferGate.setPosition(gateClose);
         }
 
 
@@ -109,17 +114,17 @@ public class A_ShooterTuning extends OpMode {
         shooterPID.setTargetFlywheelRPM(targetRPM);
 
         // Read encoder velocity (ticks/sec) from topShooter
-        double ticksPerSec = topShooter.getVelocity();
+        double ticksPerSec = bottomShooter.getVelocity();
         double measuredFlywheelRPM = S_CloseShooterPID.motorTicksPerSecToFlywheelRPM(ticksPerSec);
 
         double powerCmd;
         if (shooterEnabled && targetRPM > 0) {
             powerCmd = shooterPID.update(ticksPerSec);
-            transferGate.setPosition(.75);
+            // transferGate.setPosition(.75);
 
         } else {
             powerCmd = 0.0;
-            transferGate.setPosition(.6);
+            //transferGate.setPosition(.6);
         }
 
         topShooter.setPower(powerCmd);

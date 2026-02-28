@@ -40,7 +40,7 @@ public class Blue_Goal_League3 extends LinearOpMode {
 
         Pose2d goalPose = new Pose2d(goalX, goalY, goalHeading);
 
-        Pose2d spike2Pose = new Pose2d( spikeX + spike_x_gap, spikeY, spikeHeading);
+        Pose2d spike2Pose = new Pose2d( spikeX + spike_x_gap - 1, spikeY, spikeHeading);
         Pose2d spike1Pose = new Pose2d( spikeX, spikeY, spikeHeading);
         Pose2d spike3Pose = new Pose2d( spikeX + (2* spike_x_gap), spikeY, spikeHeading);
 
@@ -49,7 +49,7 @@ public class Blue_Goal_League3 extends LinearOpMode {
         Pose2d afterspike1Pose = new Pose2d( spikeX, spikeY, spikeHeading);
         Pose2d afterspike3Pose = new Pose2d( spikeX + (2 * spike_x_gap), spikeY, spikeHeading);
 
-        TranslationalVelConstraint slow = new TranslationalVelConstraint(12);
+        TranslationalVelConstraint slow = new TranslationalVelConstraint(18);
 
 
         ///  Trajectories ///

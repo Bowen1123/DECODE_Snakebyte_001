@@ -4,6 +4,7 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -13,7 +14,11 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.teamcode.LeagueChampThursday.S_Adaptive_Equations;
+import org.firstinspires.ftc.teamcode.LeagueChampThursday.S_CloseShooterPID;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
+
+@Disabled
 
 public class A_PowerDistributionTeleop extends LinearOpMode {
 
@@ -90,26 +95,31 @@ public class A_PowerDistributionTeleop extends LinearOpMode {
                     shooter_power = INT_shooter_power;
                     transfer_power = INT_transfer_power;
                     dt_max_power = INT_dt_max_power;
-
-                    transferGate.setPosition(gateClosePos);
-
                     break;
                 case SHOOT:
                     intake_power = SH_intake_power;
                     shooter_power = SH_shooter_power;
                     transfer_power = SH_transfer_power;
                     dt_max_power = SH_dt_max_power;
-
-                    active_shooter = true;
-
-                    transferGate.setPosition(gateOpenPos);
-
                     break;
                 case ENDGAME:
-                    intake_power = 0.85;
-                    shooter_power = 1;
-                    transfer_power = 1;
+                    intake_power = 0.0;
+                    shooter_power = .4;
+                    transfer_power = .75;
                     dt_max_power = 1;
+            }
+
+
+            switch (mode) {
+                case INTAKE:
+                    ///
+                    break;
+                case SHOOT:
+                    ///
+                    break;
+                case ENDGAME:
+                    ///
+                    break;
             }
 
 

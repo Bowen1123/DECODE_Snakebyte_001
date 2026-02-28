@@ -1,10 +1,11 @@
-package org.firstinspires.ftc.teamcode.LeagueChamp;
+package org.firstinspires.ftc.teamcode.LeagueChampThursday;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -19,8 +20,9 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
+@Disabled
 @TeleOp
-public class A_BasicTeleop extends LinearOpMode {
+public class BasicTeleop extends LinearOpMode {
 
     private DcMotorEx leftFront, leftBack, rightFront, rightBack;
     private DcMotorEx intake, transfer, topShooter, bottomShooter;

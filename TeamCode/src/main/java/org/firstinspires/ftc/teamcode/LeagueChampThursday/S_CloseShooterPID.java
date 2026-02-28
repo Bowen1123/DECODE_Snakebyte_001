@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.LeagueChampNotComp;
+package org.firstinspires.ftc.teamcode.LeagueChampThursday;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -12,10 +12,10 @@ public class S_CloseShooterPID {
     public static double FLYWHEEL_RPM_PER_MOTOR_RPM = 1.5;
 
     // ---- Dashboard tunables (edit live in FTC Dashboard) ----
-    public static double CFG_kP = 0.0201; // .0101
-    public static double CFG_kI = 0.00005;
-    public static double CFG_kD = 0.0002;
-    public static double CFG_kF = 0.00001;
+    public static double CFG_kP = 0.0022; // .0101
+    public static double CFG_kI = 0.0003;
+    public static double CFG_kD = 0.01;
+    public static double CFG_kF = 0.00024;
 
     public static double CFG_minPower = 0.4;
     public static double CFG_maxPower = 1.0;

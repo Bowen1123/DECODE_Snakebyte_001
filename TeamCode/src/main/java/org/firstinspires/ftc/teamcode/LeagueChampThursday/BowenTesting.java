@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.LeagueChamp;
+package org.firstinspires.ftc.teamcode.LeagueChampThursday;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
@@ -12,7 +12,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.LeagueChampNotComp.S_CloseShooterPID;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp

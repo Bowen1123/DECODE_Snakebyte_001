@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.LeagueChamp;
 
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
@@ -25,12 +24,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.LeagueChampThursday.S_Adaptive_Equations;
 import org.firstinspires.ftc.teamcode.LeagueChampThursday.S_CloseShooterPID;
+import org.firstinspires.ftc.teamcode.LeagueChampThursday.StorePose;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @TeleOp
 @Disabled
-
-public class A_ShootingTeleop extends LinearOpMode {
+public class A_Blue_Teleop extends LinearOpMode {
 
     private DcMotorEx leftFront, leftBack, rightFront, rightBack;
     private DcMotorEx intake, transfer, topShooter, bottomShooter;
@@ -39,7 +38,7 @@ public class A_ShootingTeleop extends LinearOpMode {
     private CRServo turret;
     private Limelight3A limelight;
     private ColorSensor topColor, bottomColor;
-    private double gateOpen = 0.75, gateClose = 0.55;
+    private double gateOpen = 0.75, gateClose = 0.61;
 
     /// Boolean values
     private boolean lastA1 = false, lastB1 = false, lastX1 = false, lastY1 = false;
@@ -48,7 +47,7 @@ public class A_ShootingTeleop extends LinearOpMode {
     private boolean active_shooter = false;
 
     ///  Preset Values
-    private final double INT_shooter_power = 0.4, INT_transfer_power = 0.9, INT_intake_power = .7, INT_dt_max_power = 0.62;
+    private final double INT_shooter_power = 0.4, INT_transfer_power = 0.75, INT_intake_power = .85, INT_dt_max_power = 0.7;
     private final double SH_shooter_power = 1, SH_transfer_power = .8, SH_intake_power = .5, SH_dt_max_power = 0.4;
     private double shooter_power = 0, transfer_power = 0, intake_power = 0, dt_max_power = 0;
 
@@ -59,43 +58,43 @@ public class A_ShootingTeleop extends LinearOpMode {
     private POWER_MODE powerMode = POWER_MODE.INTAKE;
 
     /// Positions
-    private Pose2d robot_pose = new Pose2d(0,0,Math.toRadians(0));
+    private Pose2d robot_pose = new Pose2d(-60,-60,Math.toRadians(215));
     private double blue_goal_x = -70, blue_goal_y = -65;
 
     // X and Y are prob flipped?
 
-    public static double goalX = 50;
-    public static double goalY = 50;
+    public static double goalX = -70;
+    public static double goalY = -70;
 
     // Odom
-    public static double ODOM_kP = .98;
-    public static double ODOM_kD = 0.085;
+    public static double ODOM_kP = .64;
+    public static double ODOM_kD = 0.11;
     public static double ODOM_kS_min = 0.02;
     public static double ODOM_kS_max = 0.12;
-    public static double ODOM_kS_fullAtDeg = 12.0;
+    public static double ODOM_kS_fullAtDeg = 1.0;
     public static double ODOM_deadbandDeg = 1.0;
-    public static double ODOM_MIN_MOVE_POWER = 0.04;
+    public static double ODOM_MIN_MOVE_POWER = 0.07;
     public static double ODOM_MAX_POWER = 0.45;
 
     // Limelight
-    public static double LL_kP = 0.018;
-    public static double LL_kD = 0.00085;
-    public static double LL_kS_min = 0.02;
+    public static double LL_kP = 0.021;
+    public static double LL_kD = 0.001;
+    public static double LL_kS_min = 0.03;
     public static double LL_kS_max = 0.12;
-    public static double LL_kS_fullAtDeg = 12.0;
-    public static double LL_deadbandDeg = .65;
-    public static double LL_MIN_MOVE_POWER = 0.08;
+    public static double LL_kS_fullAtDeg = 1.0;
+    public static double LL_deadbandDeg = 1.25;
+    public static double LL_MIN_MOVE_POWER = 0.07;
     public static double LL_MAX_POWER = 0.45;
 
     // Turret IMU
-    public static double turretOffsetRad = 0.0;
+    public static double turretOffsetRad = Math.toRadians(75);
 
     // Limelight
     public static int PIPELINE = 0;
     public static int pollRateHz = 100;
 
     // tolerance
-    public static double limelightArmDeg = 1.4;
+    public static double limelightArmDeg = 1;
     public static double llLostTimeoutSec = 0.15;
     ///  TRACKING
     private boolean trackingOn = false;
@@ -112,7 +111,7 @@ public class A_ShootingTeleop extends LinearOpMode {
     private double distanceToGoal = 0;
     private final S_CloseShooterPID shooterPID = new S_CloseShooterPID();
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
-
+    private boolean d2control = false, d2turretcontrol = false;
 
 
     @Override
@@ -125,7 +124,10 @@ public class A_ShootingTeleop extends LinearOpMode {
 
         waitForStart();
         while (opModeIsActive()){
+            StorePose sp = new StorePose();
+            telemetry.addData("GetPose", sp.getPose());
             switch (powerMode) {
+
                 ///  MODE DETERMINATION
                 case INTAKE:
                     intake_power = INT_intake_power;
@@ -133,7 +135,7 @@ public class A_ShootingTeleop extends LinearOpMode {
                     transfer_power = INT_transfer_power;
                     dt_max_power = INT_dt_max_power;
 
-                    transferGate.setPosition(transferGateClose);
+                    // transferGate.setPosition(transferGateClose);
 
                     break;
                 case SHOOT:
@@ -156,15 +158,15 @@ public class A_ShootingTeleop extends LinearOpMode {
 
 
             ///  INTAKE AND TRANSFER
-            if (gamepad1.right_trigger > 0.2 || gamepad2.right_trigger > 0.2) {
-                intake.setPower(intake_power);
+            if (gamepad1.right_trigger > 0.2 /*|| gamepad2.right_trigger > 0.2*/) {
+                intake.setPower(intake_power *.5);
                 transfer.setPower(transfer_power);
                 transferGate.setPosition(gateOpen);
-            } else if (gamepad1.right_bumper || gamepad2.right_bumper){
+            } else if (gamepad1.right_bumper /*|| gamepad2.right_bumper*/){
                 intake.setPower(intake_power);
-                transfer.setPower(transfer_power);
+                transfer.setPower(transfer_power * .7);
                 transferGate.setPosition(gateClose);
-            } else if (gamepad1.left_bumper || gamepad2.left_bumper) {
+            } else if (gamepad1.left_bumper /*|| gamepad2.left_bumper*/) {
                 intake.setPower(-intake_power);
                 transfer.setPower(-transfer_power);
                 transferGate.setPosition(gateClose);
@@ -174,15 +176,35 @@ public class A_ShootingTeleop extends LinearOpMode {
                 transferGate.setPosition(gateClose);
             }
 
+//            if (gamepad2.dpad_up){
+//                drive.localizer.setPose(new Pose2d(0,0,0));
+//            }
+//            if (gamepad2.right_trigger > 0.1){
+//                turret.setPower(-Math.min(gamepad2.right_trigger, .6));
+//            } else if (gamepad2.left_trigger > 0.1){
+//                turret.setPower(Math.max(gamepad2.right_trigger, .6));
+//            } else if (gamepad2.right_bumper){
+//                turret.setPower(-.2);
+//            }else if (gamepad2.left_bumper){
+//                turret.setPower(.2);
+//            } else {
+//                turret.setPower(0);
+//            }
 
-            // shooterRamp.setPosition(S_Adaptive_Equations.getRampPos(distanceToGoal));
+            if (gamepad2.dpadUpWasPressed()){
+                d2control = ! d2control;
+            }
 
-            if (gamepad2.bWasPressed()){
-                shooterRamp.setPosition(1);
+            if (!d2control) {
+                shooterRamp.setPosition(S_Adaptive_Equations.getRampPos(distanceToGoal));
+            } else {
+                if (gamepad2.yWasPressed()){
+                    shooterRamp.setPosition(Math.max(Math.min(shooterRamp.getPosition() + 0.1, .65), .3));
+                } else if (gamepad2.aWasPressed()){
+                    shooterRamp.setPosition(Math.max(Math.min(shooterRamp.getPosition() - 0.1, .65), .3));
+                }
             }
-            if (gamepad2.aWasPressed()){
-                shooterRamp.setPosition(0);
-            }
+
 
 
             ///  CHANGE MODES
@@ -198,13 +220,16 @@ public class A_ShootingTeleop extends LinearOpMode {
 
 
 
+
             ///  Shoot
-            if (gamepad2.xWasPressed() || gamepad1.xWasPressed()) {
+            if (gamepad1.xWasPressed()) {
                 active_shooter = !active_shooter;
                 shooterPID.reset(); // clean start/stop
             }
 
             targetRPM = S_Adaptive_Equations.getFlywheelRPM(distanceToGoal);
+            targetRPM = 3100;
+
 
             // Clamp target
             if (targetRPM < 0) targetRPM = 0;
@@ -274,8 +299,8 @@ public class A_ShootingTeleop extends LinearOpMode {
 
             double turretYawRad = getTurretYawRad() + turretOffsetRad;
 
-            double targetAngleRad = Math.atan2(goalX + robotX, goalY + robotY); //goalY - robotY, goalX - robotX //goalX - robotX, goalY - robotY
-            distanceToGoal = Math.hypot(goalX + robotX, goalY + robotY);
+            double targetAngleRad = Math.atan2(goalY - robotY, goalX - robotX); //goalY - robotY, goalX - robotX //goalX - robotX, goalY - robotY
+            distanceToGoal = Math.hypot(goalX - robotX, goalY - robotY);
             //distanceToGoal = Math.sqrt(Math.pow(goalX - robotX, 2), Math.pow(goalY - robotY, 2));
 
             if (!trackingOn) {
@@ -330,7 +355,17 @@ public class A_ShootingTeleop extends LinearOpMode {
                     turretPower = odomCmd(errorRad, errorRate);
                 }
             }
-            turret.setPower(turretPower);
+
+            if (gamepad2.right_bumper){
+                turret.setPower(-.2);
+            }else if (gamepad2.left_bumper){
+                turret.setPower(.3);
+            } else {
+                turret.setPower(0);
+            }
+
+
+
 
 
 
