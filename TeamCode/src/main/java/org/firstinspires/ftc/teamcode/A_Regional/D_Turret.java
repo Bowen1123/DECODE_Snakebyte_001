@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -161,7 +162,12 @@ public class D_Turret {
 
         return deltaH / tan;
     }
-
+    public Action search() {
+        return packet -> {
+            loop();
+            return true;
+        };
+    }
     /**
      * Main turret control loop:
      * - call updateLimelight() before this each cycle

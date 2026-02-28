@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -32,6 +33,23 @@ public class C_Transfer {
     public void outtake() {
         transferGate.setPosition(gateOpen);
         transfer.setPower(transfer_power_outtake); // negative if reversing
+    }
+    public void properOutake() {
+        transferGate.setPosition(gateClose);
+        transfer.setPower(-transfer_power_outtake); // negative if reversing
+    }
+    public Action intakes() {
+        return packet -> {
+            intake();     // run PID + write motors
+            return true;  // keep running forever
+        };
+    }
+
+    public Action outtakes() {
+        return packet -> {
+            outtake();     // run PID + write motors
+            return true;  // keep running forever
+        };
     }
 
     /// Stops stuff
