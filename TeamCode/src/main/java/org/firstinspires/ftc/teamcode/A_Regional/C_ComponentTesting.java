@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.MecanumDrive;
  *
  * TRANSFER (Gamepad1):
  *  - Right Bumper  : intake()
- *  - Right Trigger : outtake()
+ *  - Left Bumper : outtake()
  *  - else          : deactivate()
  *
  * SHOOTER (Gamepad2):
@@ -93,13 +93,17 @@ public class C_ComponentTesting extends LinearOpMode {
         while (opModeIsActive()) {
 
             // ---------------- TRANSFER ----------------
-            if (gamepad1.right_trigger > 0.2) {
+            if (gamepad1.right_trigger > .2) {
                 intake.outtake();
                 transfer.outtake();
             } else if (gamepad1.right_bumper) {
                 intake.intake();
                 transfer.intake();
-            } else {
+            } else if(gamepad1.left_bumper){
+                transfer.properOutake();
+                intake.properOuttake();
+            }//Soren was here abnd he is the worst programmer in the org
+            else {
                 intake.deactivate();
                 transfer.deactivate();
             }

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -25,7 +26,7 @@ import com.qualcomm.robotcore.util.Range;
  *   shooter.update();                    // computes targets + runs PID + writes motors
  */
 @Config
-public class C_Shooter {
+public class C_Shooter  {
 
     private Servo leftLED, rightLED;
     // ---------------- Ramp bounds (your values) ----------------
@@ -186,6 +187,12 @@ public class C_Shooter {
     }
     public void setTestTargetRampPos(double pos){
         testTargetRampPos = pos;
+    }
+    public Action updateAction() {
+        return packet -> {
+            update();     // run PID + write motors
+            return true;  // keep running forever
+        };
     }
 
     /**

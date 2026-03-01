@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -24,6 +25,22 @@ public class C_Intake {
 
     public void outtake() {
         intake.setPower(intake_power_outtake);
+
+    }
+    public Action intakes() {
+        return packet -> {
+            intake();
+            return true;
+        };
+    }
+    public Action stop() {
+        return packet -> {
+            deactivate();
+            return true;
+        };
+    }
+    public void properOuttake() {
+        intake.setPower(-intake_power_outtake);
 
     }
     public void deactivate() {
