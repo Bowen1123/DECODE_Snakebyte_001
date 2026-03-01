@@ -61,7 +61,7 @@ public class C_ComponentTesting extends LinearOpMode {
     private CRServo turretServo;
     private D_BasicTurret turret;
 
-    /** Drive (optional, kept for structure) **/
+    /** Drive **/
     private MecanumDrive drive;
 
     // Toggle state
@@ -148,8 +148,6 @@ public class C_ComponentTesting extends LinearOpMode {
             shooter.syncFromDashboard();
             shooter.setDistanceInches(distanceIn);
             double shooterPowerCmd = shooter.update();
-
-            
 
             ///  Drive
             drive.updatePoseEstimate();
