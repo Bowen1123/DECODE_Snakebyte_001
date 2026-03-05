@@ -1,149 +1,166 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.Pose2d;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+
 /**
- * D_DualTurret (degree-first)
+ * D_DualTurret (Dual-stage ODOM -> LL) using the SAME output shaping as your proven D_BasicTurret:
+ *  - low-pass filtered error
+ *  - derivative-on-measurement (filtered rate)
+ *  - kS + optional near-center boost
+ *  - slew-rate limiting
+ *  - short target-hold / decay-on-loss
  *
- * Two-stage turret tracking:
- *  - Odometry stage: uses drivetrain heading + turret encoder to aim toward a FIELD goal heading (all degrees)
- *  - Vision stage: once odom close (gate) AND Limelight sees target, uses tx (degrees) to finish
+ * This version uses:
+ *  - Drivetrain yaw (passed in each loop)
+ *  - Turret IMU yaw ("turretImu") for turret ABS heading
+ *  - POI (goalX, goalY) for ODOM target ABS heading
+ *  - Limelight tx for fine aiming once armed/valid
  *
- * Conventions:
- *  - All tuning constants / telemetry / error signals are in DEGREES.
- *  - Only convert to radians for trig or wrap helper if you want, but we implement wrap in degrees directly.
+ * Public API intentionally similar to D_BasicTurret:
+ *  - constructor(Limelight3A, IMU)
+ *  - init(CRServo), start()
+ *  - setTrackingEnabled(boolean), isTrackingEnabled()
+ *  - updateLimelight()
+ *  - loop(pose, drivetrainYawRad)  // active dual-stage
+ *  - stop()
  *
- * Hardware:
- *  - CRServo turret
- *  - REV Through Bore encoder read via DcMotorEx (configured as "turretEncoder")
- *
- * Gear ratio for ticks->turret output:
- *  - Encoder axle drives turret through 31T -> 112T
- *  - turretAngle = encoderAngle * (31/112) * ENCODER_SIGN
- *  - (44:28 is upstream of encoder, does NOT affect mapping)
+ * Extra:
+ *  - syncTurretImuToDrivetrain(drivetrainYawRad): sets an offset so turret ABS matches drivetrain yaw NOW.
+ *  - resetTurretImuYawAndSync(drivetrainYawRad): resetYaw() then syncs offset.
  */
 @Config
 public class D_DualTurret {
 
-    // ---------------- Modes ----------------
-    public enum Mode {
-        LOCK_TO_DRIVETRAIN,  // turret rel heading -> 0 deg
-        ODOMETRY_ONLY,       // turret rel heading -> (goalFieldDeg - drivetrainHeadingDeg)
-        LIMELIGHT_ONLY,      // tx only
-        DUAL_STAGE           // odom until gate, then limelight when target seen/recent
-    }
+    // ---------------- POI / ODOM target ----------------
+    public static double goalX = 51.0;
+    public static double goalY = 41.0;
 
     // ---------------- Limelight ----------------
     public static int POLL_RATE_HZ = 100;
     public static int PIPELINE_INDEX = 0;
 
-    // ---------------- Direction ----------------
-    public static double SERVO_SIGN = +1.0;     // flip if turret spins wrong
-    public static double ENCODER_SIGN = +1.0;   // flip if turret angle increases wrong way
+    // ---------------- Behavior ----------------
+    public static double SERVO_SIGN = +1.0;
+    public static double DEADBAND_DEG = 2.0; // used for BOTH odom and LL "aimed" definition
 
-    // ---------------- Encoder ----------------
-    public static double ENCODER_TICKS_PER_REV = 8192.0;   // confirm your actual CPR
-    public static double ENCODER_ZERO_TICKS = 0.0;
+    // ---------------- Dual-stage switching ----------------
+    public static boolean ENABLE_DUAL_STAGE = true;
+    public static double ARM_LL_DEG = 1.4;        // when |odom error| <= this, start LL + allow LL stage
+    public static double LL_LOST_TIMEOUT_SEC = 0.15; // drop back to ODOM if LL target lost this long
+    public static double ODOM_ONLY_WHEN_NO_POSE_SEC = 0.0; // kept for safety; 0 means immediate fallback behavior
 
-    // Encoder axle -> turret output ratio (31:112)
-    public static double ENCODER_TO_TURRET_RATIO = 31.0 / 112.0;
+    // ---------------- Turret IMU ----------------
+    // turretAbsRad = wrap( turretImuYawRad + turretImuOffsetRad )
+    public static double turretImuOffsetRad = 0.0;
+    public static double TURRET_IMU_SIGN = +1.0; // set -1 if turret IMU yaw is reversed
 
-    // ---------------- Goal heading (FIELD frame) ----------------
-    public static double GOAL_FIELD_HEADING_DEG = 0.0;
+    // ---------------- Soft limiter (relative to drivetrain yaw) ----------------
+    public static boolean ENABLE_SOFT_LIMIT = true;
+    public static double MAX_REL_ANGLE_DEG = 90.0;
+    public static double LIMIT_CUSHION_DEG = 1.0;
 
-    // ---------------- Odom controller (degrees) ----------------
-    public static double ODOM_DEADBAND_DEG = 2.0;
-    public static double ODOM_MAX_POWER = 0.55;
-    public static double ODOM_MIN_POWER = 0.18;
-    public static double ODOM_SLEW_POWER_PER_SEC = 100;
+    // ---------------- Controller shaping (same style as D_BasicTurret) ----------------
+    // ODOM gains
+    public static double ODOM_KP = 0.020;
+    public static double ODOM_KD = 0.004;
+    public static double ODOM_KS = 0.14;
+    public static double ODOM_KS_NEAR = 0.16;
+    public static double ODOM_KS_NEAR_RANGE_DEG = 3.0;
 
-    // PD + kS (error is degrees, rate is deg/s)
-    public static double ODOM_KP = 0.020;   // power/deg  (start 0.010–0.040)
-    public static double ODOM_KD = 0.0015;  // power/(deg/s) (start 0.0008–0.003)
-    public static double ODOM_KS = 0.10;
-    public static double ODOM_KS_NEAR = 0.13;
-    public static double ODOM_KS_NEAR_RANGE_DEG = 5.0;
+    // LL gains
+    public static double LL_KP = 0.013;
+    public static double LL_KD = 0.003;
+    public static double LL_KS = 0.14;
+    public static double LL_KS_NEAR = 0.16;
+    public static double LL_KS_NEAR_RANGE_DEG = 3.0;
 
-    // Filtering (degrees)
-    public static double ODOM_ANGLE_LP_ALPHA = 0.6;
-    public static double ODOM_RATE_LP_ALPHA  = 0.5;
+    // Filtering (same semantics as your working class)
+    public static double ERR_LP_ALPHA = 0.6;     // like TX_LP_ALPHA but for generic error signal
+    public static double RATE_LP_ALPHA = 0.5;    // same as before
 
-    // ---------------- Vision controller (degrees) ----------------
-    public static double V_DEADBAND_DEG = 2.0;
-    public static double V_MAX_POWER = 0.45;
-    public static double V_MIN_POWER = 0.20;
-    public static double V_SLEW_POWER_PER_SEC = 100;
+    // Output limits (same semantics as your working class)
+    public static double MAX_POWER = 0.45;
+    public static double MIN_POWER = 0.20;
+    public static double SLEW_POWER_PER_SEC = 100;
 
-    // PD + kS (tx degrees, txRate deg/s)
-    public static double V_KP = 0.013;
-    public static double V_KD = 0.003;
-    public static double V_KS = 0.14;
-    public static double V_KS_NEAR = 0.16;
-    public static double V_KS_NEAR_RANGE_DEG = 3.0;
-
-    public static double V_TX_LP_ALPHA   = 0.6;
-    public static double V_RATE_LP_ALPHA = 0.5;
-
-    // Target hold & decay
-    public static double TARGET_HOLD_SEC = 0.02;
-    public static double LOST_OUTPUT_DECAY_PER_SEC = 1.0;
-
-    // Dual-stage gate (degrees)
-    public static double ODOM_TO_VISION_GATE_DEG = 8.0;
+    // Target handling / decay (same semantics as your working class)
+    public static double TARGET_HOLD_SEC = 0.02;          // for LL flicker hold
+    public static double LOST_OUTPUT_DECAY_PER_SEC = 1.0; // decay toward 0 on loss
 
     // Timing clamps
     public static double DT_MIN = 1e-3;
     public static double DT_MAX = 0.08;
 
-    // ---------------- Internal state ----------------
+    // ---------------- Modes ----------------
+    public enum Mode {
+        AUTO_DUAL,      // ODOM -> LL when close and target is valid
+        ODOM_ONLY,      // never uses LL (still can start/stop LL if you want, but not used for control)
+        LL_ONLY,        // uses tx only (like your D_BasicTurret)
+        LOCK_TO_DRIVE,  // turret holds drivetrain heading (rel -> 0)
+        OFF
+    }
+
+    // ---------------- Hardware ----------------
     private final Limelight3A ll;
+    private final IMU turretImu;
     private CRServo turretServo;
-    private DcMotorEx encoderMotor;
 
+    // ---------------- State ----------------
     private boolean trackingEnabled = false;
-    private Mode mode = Mode.DUAL_STAGE;
+    private Mode mode = Mode.AUTO_DUAL;
 
-    private final ElapsedTime loopTimer = new ElapsedTime();
-    private double tSec = 0.0;
-
-    // drivetrain heading (deg, field frame)
-    private double drivetrainHeadingDeg = 0.0;
-
-    // limelight
+    // Limelight readings
     private boolean hasValidTarget = false;
     private double txDeg = 0.0;
     private double tyDeg = 0.0;
+
+    // time
+    private final ElapsedTime loopTimer = new ElapsedTime();
+    private double tSec = 0.0;
     private double lastSeenSec = -999.0;
+    private double lastLLOkSec = -999.0;
 
-    // odom filter state (we filter turretRelDeg and derive rate)
-    private boolean odomFiltInit = false;
-    private double turretRelDegFilt = 0.0;
-    private double turretRelRateDegPerSecFilt = 0.0;
-    private double lastTurretRelDegFilt = 0.0;
+    // stage
+    private enum Stage { ODOM, LL }
+    private Stage stage = Stage.ODOM;
 
-    // vision filter state
-    private boolean vFiltInit = false;
-    private double txFilt = 0.0;
-    private double txRateDegPerSecFilt = 0.0;
-    private double lastTxFilt = 0.0;
+    // filtered signals (generic error filtering)
+    private boolean filtInit = false;
+    private double errFilt = 0.0;
+    private double errRateFilt = 0.0;
+    private double lastErrFilt = 0.0;
 
-    // output (slew-limited)
+    // output state
     private double out = 0.0;
 
-    public D_DualTurret(Limelight3A llDevice) {
+    // debug/telemetry
+    private double lastErrDeg = 0.0;
+    private double lastErrRateDegPerSec = 0.0;
+    private double lastOdomErrDeg = 0.0;
+    private double lastLLErrDeg = 0.0;
+
+    public D_DualTurret(Limelight3A llDevice, IMU turretImu) {
         this.ll = llDevice;
+        this.turretImu = turretImu;
         loopTimer.reset();
     }
 
-    public void init(CRServo servo, DcMotorEx encoderMotor) {
+    public void init(CRServo servo) {
         this.turretServo = servo;
-        this.encoderMotor = encoderMotor;
     }
 
     public void start() {
@@ -153,10 +170,12 @@ public class D_DualTurret {
 
         loopTimer.reset();
         tSec = 0.0;
-        out = 0.0;
         lastSeenSec = -999.0;
-        resetOdomFilters();
-        resetVisionFilters();
+        lastLLOkSec = -999.0;
+        stage = Stage.ODOM;
+
+        resetFilters();
+        out = 0.0;
     }
 
     public void stop() {
@@ -167,9 +186,9 @@ public class D_DualTurret {
     public void setTrackingEnabled(boolean enabled) {
         if (enabled != trackingEnabled) {
             trackingEnabled = enabled;
+            stage = Stage.ODOM;
+            resetFilters();
             out = 0.0;
-            resetOdomFilters();
-            resetVisionFilters();
             if (!trackingEnabled) stop();
         }
     }
@@ -179,257 +198,290 @@ public class D_DualTurret {
     public void setMode(Mode m) {
         if (m != mode) {
             mode = m;
+            stage = Stage.ODOM;
+            resetFilters();
             out = 0.0;
-            resetOdomFilters();
-            resetVisionFilters();
         }
     }
 
     public Mode getMode() { return mode; }
+    public String getStage() { return stage.name(); }
 
-    public void setGoalFieldHeadingDeg(double deg) { GOAL_FIELD_HEADING_DEG = deg; }
-
-    public boolean hasTarget() { return hasValidTarget; }
-    public double getTxDeg() { return txDeg; }
-    public double getTyDeg() { return tyDeg; }
-
-    // ---- Useful for telemetry ----
-    public double getDrivetrainHeadingDeg() { return drivetrainHeadingDeg; }
-
-    /**
-     * Call once per loop.
-     * drivetrainHeadingDeg: RoadRunner pose heading converted to degrees in TeleOp
-     *
-     * Returns true when aimed under current active controller.
-     */
-    public boolean update(double drivetrainHeadingDeg) {
-        if (turretServo == null || encoderMotor == null) return false;
-
-        // dt
-        double dt = loopTimer.seconds();
-        loopTimer.reset();
-        if (dt < DT_MIN) dt = DT_MIN;
-        if (dt > DT_MAX) dt = DT_MAX;
-        tSec += dt;
-
-        this.drivetrainHeadingDeg = wrapDeg(drivetrainHeadingDeg);
-
-        if (!trackingEnabled) {
-            stop();
-            return false;
-        }
-
-        updateLimelight();
-
-        // Determine odometry target relative heading (degrees)
-        double targetRelDeg;
-        switch (mode) {
-            case LOCK_TO_DRIVETRAIN:
-                targetRelDeg = 0.0;
-                break;
-            case ODOMETRY_ONLY:
-            case DUAL_STAGE:
-                targetRelDeg = wrapDeg(GOAL_FIELD_HEADING_DEG - this.drivetrainHeadingDeg);
-                break;
-            case LIMELIGHT_ONLY:
-            default:
-                targetRelDeg = 0.0; // unused
-                break;
-        }
-
-        // Current turret relative heading from encoder (degrees)
-        double turretRelDeg = getTurretRelativeHeadingDeg();
-
-        // Update odom filters
-        updateOdomFilters(turretRelDeg, dt);
-
-        // Decide controller
-        boolean useVision = (mode == Mode.LIMELIGHT_ONLY);
-
-        if (mode == Mode.DUAL_STAGE) {
-            double odomErrDeg = wrapDeg(targetRelDeg - turretRelDeg);
-            boolean gateReached = Math.abs(odomErrDeg) <= ODOM_TO_VISION_GATE_DEG;
-
-            boolean recentlySeen = (tSec - lastSeenSec) <= TARGET_HOLD_SEC;
-            boolean visionAvailable = hasValidTarget || recentlySeen;
-
-            useVision = gateReached && visionAvailable;
-        }
-
-        if (mode == Mode.LIMELIGHT_ONLY) {
-            return stepVision(dt);
-        }
-
-        if (useVision) {
-            return stepVision(dt);
-        } else {
-            return stepOdom(targetRelDeg, turretRelDeg, dt);
-        }
-    }
-
-    // ---------------- Limelight ----------------
-    private void updateLimelight() {
+    // ----- Limelight update (same idea as your Basic) -----
+    public void updateLimelight() {
         LLResult r = ll.getLatestResult();
         if (r != null && r.isValid()) {
             hasValidTarget = true;
             txDeg = r.getTx();
             tyDeg = r.getTy();
             lastSeenSec = tSec;
+            lastLLOkSec = tSec;
         } else {
             hasValidTarget = false;
         }
     }
 
-    // ---------------- Odom control (degrees) ----------------
-    private boolean stepOdom(double targetRelDeg, double turretRelDeg, double dt) {
-        double errDeg = wrapDeg(targetRelDeg - turretRelDeg);
-        double absErr = Math.abs(errDeg);
+    public boolean hasTarget() { return hasValidTarget; }
+    public double getTxDeg() { return txDeg; }
+    public double getTyDeg() { return tyDeg; }
 
-        if (absErr <= ODOM_DEADBAND_DEG) {
-            out = 0.0;
-            turretServo.setPower(0.0);
-            return true;
-        }
-
-        // derivative-on-measurement:
-        // error = target - turret; d(error)/dt = - d(turret)/dt
-        double turretRateDegPerSec = turretRelRateDegPerSecFilt;
-
-        double p = ODOM_KP * errDeg;
-        double d = ODOM_KD * (-turretRateDegPerSec);
-
-        // kS with near blend
-        double ksNearBlend = 1.0 - Range.clip(absErr / Math.max(1e-6, ODOM_KS_NEAR_RANGE_DEG), 0.0, 1.0);
-        double ksTotal = ODOM_KS + (ODOM_KS_NEAR * ksNearBlend);
-        double ff = Math.signum(errDeg) * ksTotal;
-
-        double raw = SERVO_SIGN * (p + d + ff);
-
-        raw = Range.clip(raw, -ODOM_MAX_POWER, ODOM_MAX_POWER);
-
-        if (Math.abs(raw) > 1e-6 && Math.abs(raw) < ODOM_MIN_POWER) {
-            raw = Math.signum(raw) * ODOM_MIN_POWER;
-        }
-
-        double maxDelta = Math.abs(ODOM_SLEW_POWER_PER_SEC) * dt;
-        out = slewLimit(out, raw, maxDelta);
-
-        turretServo.setPower(out);
-        return false;
+    // ----- IMU heading helpers -----
+    /** Turret absolute yaw in radians (with sign + offset). */
+    public double getTurretAbsYawRad() {
+        YawPitchRollAngles a = turretImu.getRobotYawPitchRollAngles();
+        double yaw = a.getYaw(AngleUnit.RADIANS);
+        return wrapAngle(TURRET_IMU_SIGN * yaw + turretImuOffsetRad);
     }
 
-    private void updateOdomFilters(double turretRelDeg, double dt) {
-        if (!odomFiltInit) {
-            turretRelDegFilt = turretRelDeg;
-            lastTurretRelDegFilt = turretRelDegFilt;
-            turretRelRateDegPerSecFilt = 0.0;
-            odomFiltInit = true;
-            return;
-        }
-
-        // Filter angle with shortest wrap delta
-        double delta = wrapDeg(turretRelDeg - turretRelDegFilt);
-        turretRelDegFilt = wrapDeg(turretRelDegFilt + ODOM_ANGLE_LP_ALPHA * delta);
-
-        double rate = wrapDeg(turretRelDegFilt - lastTurretRelDegFilt) / dt;
-        lastTurretRelDegFilt = turretRelDegFilt;
-
-        turretRelRateDegPerSecFilt =
-                turretRelRateDegPerSecFilt + ODOM_RATE_LP_ALPHA * (rate - turretRelRateDegPerSecFilt);
+    /**
+     * Matches turret ABS heading to drivetrain heading RIGHT NOW (no resetYaw required).
+     * After calling this, getTurretAbsYawRad() will equal drivetrainYawRad (approximately).
+     */
+    public void syncTurretImuToDrivetrain(double drivetrainYawRad) {
+        double rawTurretYaw = turretImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+        turretImuOffsetRad = wrapAngle(drivetrainYawRad - (TURRET_IMU_SIGN * rawTurretYaw));
     }
 
-    // ---------------- Vision control (degrees) ----------------
-    private boolean stepVision(double dt) {
-        boolean recentlySeen = (tSec - lastSeenSec) <= TARGET_HOLD_SEC;
+    /**
+     * Hard reset turret IMU yaw (sets it to 0), then sets offset so turret ABS matches drivetrain yaw.
+     * Use when you want a clean reference at init or when driver requests re-sync.
+     */
+    public void resetTurretImuYawAndSync(double drivetrainYawRad) {
+        turretImu.resetYaw();
+        // after reset, raw turret yaw is ~0
+        turretImuOffsetRad = wrapAngle(drivetrainYawRad);
+    }
 
-        if (hasValidTarget) {
-            if (!vFiltInit) {
-                txFilt = txDeg;
-                lastTxFilt = txFilt;
-                txRateDegPerSecFilt = 0.0;
-                vFiltInit = true;
-            } else {
-                txFilt = txFilt + V_TX_LP_ALPHA * (txDeg - txFilt);
+    /** Convenience: relative turret angle to robot (deg) = wrap(turretAbs - drivetrainYaw). */
+    public double getTurretRelDeg(double drivetrainYawRad) {
+        double rel = wrapAngle(getTurretAbsYawRad() - drivetrainYawRad);
+        return Math.toDegrees(rel);
+    }
 
-                double rate = (txFilt - lastTxFilt) / dt;
-                lastTxFilt = txFilt;
+    // ----- Dual-stage loop -----
 
-                txRateDegPerSecFilt =
-                        txRateDegPerSecFilt + V_RATE_LP_ALPHA * (rate - txRateDegPerSecFilt);
+    /**
+     * Dual-stage tracking loop.
+     * Call updateLimelight() BEFORE loop() each cycle, like your Basic class.
+     *
+     * @param pose RR pose (x,y used for POI bearing)
+     * @param drivetrainYawRad drivetrain IMU yaw (rad)
+     * @return true when "aimed" (deadband) for the active stage
+     */
+    public boolean loop(Pose2d pose, double drivetrainYawRad) {
+        if (turretServo == null) return false;
+
+        // dt
+        double dt = loopTimer.seconds();
+        loopTimer.reset();
+        if (dt < DT_MIN) dt = DT_MIN;
+        if (dt > DT_MAX) dt = DT_MAX;
+
+        tSec += dt;
+
+        if (!trackingEnabled) {
+            stop();
+            return false;
+        }
+
+        // compute headings
+        double turretAbsRad = getTurretAbsYawRad();
+        double turretRelRad = wrapAngle(turretAbsRad - drivetrainYawRad);
+
+        // soft limiter gating is done on OUTPUT (using rel angle)
+        // compute ODOM target (bearing to POI)
+        boolean havePose = (pose != null);
+        double targetAbsRad = turretAbsRad;
+        if (havePose) {
+            targetAbsRad = Math.atan2(goalY - pose.position.y, goalX - pose.position.x);
+        }
+
+        // mode forces
+        if (mode == Mode.OFF) {
+            stop();
+            return false;
+        }
+        if (mode == Mode.LOCK_TO_DRIVE) {
+            stage = Stage.ODOM; // still uses odom-shaped controller
+            double errDeg = Math.toDegrees(wrapAngle(drivetrainYawRad - turretAbsRad));
+            return runController(errDeg, dt, turretRelRad, /*useLLGains*/false, /*recentlySeen*/true);
+        }
+
+        // Determine stage for AUTO_DUAL
+        if (!ENABLE_DUAL_STAGE || mode == Mode.ODOM_ONLY) {
+            stage = Stage.ODOM;
+        } else if (mode == Mode.LL_ONLY) {
+            stage = Stage.LL;
+        } else { // AUTO_DUAL
+            // Arm LL when odom error is small
+            double odomErrDeg = Math.toDegrees(wrapAngle(targetAbsRad - turretAbsRad));
+            if (stage == Stage.ODOM) {
+                if (Math.abs(odomErrDeg) <= ARM_LL_DEG) {
+                    // if LL valid now, switch to LL
+                    if (hasValidTarget) {
+                        stage = Stage.LL;
+                        resetFilters();
+                    }
+                }
+            } else { // stage == LL
+                // fall back if LL lost too long
+                double secSinceOk = tSec - lastLLOkSec;
+                if (!hasValidTarget && secSinceOk > LL_LOST_TIMEOUT_SEC) {
+                    stage = Stage.ODOM;
+                    resetFilters();
+                }
             }
         }
 
-        if (!recentlySeen || !vFiltInit) {
+        // Recently seen logic for LL (matches your Basic)
+        boolean recentlySeen = (tSec - lastSeenSec) <= TARGET_HOLD_SEC;
+
+        // Compute error signal (deg) based on stage
+        double errDeg;
+        boolean useLLGains;
+
+        if (stage == Stage.LL) {
+            // use filtered tx like your basic (error = -tx)
+            // BUT we still allow brief hold on flicker
+            if (!recentlySeen) {
+                // decay out when LL flickers out
+                out = decayTowardZero(out, LOST_OUTPUT_DECAY_PER_SEC * dt);
+                turretServo.setPower(out);
+                lastErrDeg = 0.0;
+                lastErrRateDegPerSec = 0.0;
+                lastLLErrDeg = 0.0;
+                return false;
+            }
+            errDeg = -txDeg;
+            useLLGains = true;
+            lastLLErrDeg = errDeg;
+        } else {
+            // ODOM stage: error is absolute heading error to POI
+            errDeg = Math.toDegrees(wrapAngle(targetAbsRad - turretAbsRad));
+            useLLGains = false;
+            lastOdomErrDeg = errDeg;
+            // ODOM does not depend on LL visibility
+            recentlySeen = true;
+        }
+
+        // Run the shared shaped controller
+        return runController(errDeg, dt, turretRelRad, useLLGains, recentlySeen);
+    }
+
+    /**
+     * Shared shaped controller (same structure as D_BasicTurret):
+     *  - filter error (deg)
+     *  - filter error rate (deg/s)
+     *  - PD + kS (+ near boost)
+     *  - clamp + min power + slew limit
+     *  - optional soft-limit gate (rel angle)
+     */
+    private boolean runController(double errDegRaw,
+                                  double dt,
+                                  double turretRelRad,
+                                  boolean useLLGains,
+                                  boolean allowControl) {
+
+        if (!allowControl) {
             out = decayTowardZero(out, LOST_OUTPUT_DECAY_PER_SEC * dt);
             turretServo.setPower(out);
             return false;
         }
 
-        double error = -txFilt;
+        // init / update filters
+        if (!filtInit) {
+            errFilt = errDegRaw;
+            lastErrFilt = errFilt;
+            errRateFilt = 0.0;
+            filtInit = true;
+        } else {
+            // low-pass error
+            errFilt = errFilt + ERR_LP_ALPHA * (errDegRaw - errFilt);
+
+            // derivative of filtered error (deg/s)
+            double rate = (errFilt - lastErrFilt) / dt;
+            lastErrFilt = errFilt;
+
+            // low-pass the rate
+            errRateFilt = errRateFilt + RATE_LP_ALPHA * (rate - errRateFilt);
+        }
+
+        double error = errFilt;
         double absErr = Math.abs(error);
 
-        if (absErr <= V_DEADBAND_DEG) {
+        // deadband
+        if (absErr <= DEADBAND_DEG) {
             out = 0.0;
             turretServo.setPower(0.0);
+            lastErrDeg = error;
+            lastErrRateDegPerSec = errRateFilt;
             return true;
         }
 
-        double p = V_KP * error;
-        double d = V_KD * (-txRateDegPerSecFilt);
+        // select gains
+        double kp = useLLGains ? LL_KP : ODOM_KP;
+        double kd = useLLGains ? LL_KD : ODOM_KD;
 
-        double ksNearBlend = 1.0 - Range.clip(absErr / Math.max(1e-6, V_KS_NEAR_RANGE_DEG), 0.0, 1.0);
-        double ksTotal = V_KS + (V_KS_NEAR * ksNearBlend);
+        double ks = useLLGains ? LL_KS : ODOM_KS;
+        double ksNear = useLLGains ? LL_KS_NEAR : ODOM_KS_NEAR;
+        double ksNearRange = useLLGains ? LL_KS_NEAR_RANGE_DEG : ODOM_KS_NEAR_RANGE_DEG;
+
+        // PD (derivative-on-measurement already via errRateFilt)
+        double p = kp * error;
+        double d = kd * (errRateFilt);
+
+        // kS with optional near-center boost (same blend style as your Basic)
+        double ksNearBlend = 1.0 - Range.clip(absErr / Math.max(1e-6, ksNearRange), 0.0, 1.0);
+        double ksTotal = ks + (ksNear * ksNearBlend);
         double ff = Math.signum(error) * ksTotal;
 
         double raw = SERVO_SIGN * (p + d + ff);
 
-        raw = Range.clip(raw, -V_MAX_POWER, V_MAX_POWER);
+        // clamp max
+        raw = Range.clip(raw, -MAX_POWER, MAX_POWER);
 
-        if (Math.abs(raw) > 1e-6 && Math.abs(raw) < V_MIN_POWER) {
-            raw = Math.signum(raw) * V_MIN_POWER;
+        // min power when moving
+        if (Math.abs(raw) > 1e-6 && Math.abs(raw) < MIN_POWER) {
+            raw = Math.signum(raw) * MIN_POWER;
         }
 
-        double maxDelta = Math.abs(V_SLEW_POWER_PER_SEC) * dt;
+        // slew limit
+        double maxDelta = Math.abs(SLEW_POWER_PER_SEC) * dt;
         out = slewLimit(out, raw, maxDelta);
 
+        // soft limit gate (relative)
+        if (ENABLE_SOFT_LIMIT) {
+            out = gateAtRelLimits(out, turretRelRad);
+        }
+
         turretServo.setPower(out);
+
+        // debug
+        lastErrDeg = error;
+        lastErrRateDegPerSec = errRateFilt;
+
         return false;
     }
 
-    // ---------------- Encoder math (degrees) ----------------
-    /** Turret relative heading in degrees (-180, +180]. */
-    public double getTurretRelativeHeadingDeg() {
-        double ticks = encoderMotor.getCurrentPosition() - ENCODER_ZERO_TICKS;
+    // ---------------- Soft limit gate (relative angle) ----------------
+    private static double gateAtRelLimits(double cmd, double turretRelRad) {
+        double relDeg = Math.toDegrees(turretRelRad);
 
-        double encoderRev = ticks / ENCODER_TICKS_PER_REV;
-        double encoderDeg = encoderRev * 360.0;
+        if (relDeg >= MAX_REL_ANGLE_DEG) return Math.min(cmd, 0.0);
+        if (relDeg <= -MAX_REL_ANGLE_DEG) return Math.max(cmd, 0.0);
 
-        // turretDeg = encoderDeg * ratio * sign
-        double turretDeg = encoderDeg * ENCODER_TO_TURRET_RATIO * ENCODER_SIGN;
+        if (relDeg > 0 && relDeg >= (MAX_REL_ANGLE_DEG - LIMIT_CUSHION_DEG) && cmd > 0) return 0.0;
+        if (relDeg < 0 && relDeg <= (-MAX_REL_ANGLE_DEG + LIMIT_CUSHION_DEG) && cmd < 0) return 0.0;
 
-        return wrapDeg(turretDeg);
-    }
-
-    /** Convert desired turret relative deg to encoder ticks target (for debugging / future position hold use). */
-    public double turretRelDegToEncoderTicks(double turretRelDeg) {
-        double encoderDeg = turretRelDeg / (ENCODER_TO_TURRET_RATIO * ENCODER_SIGN);
-        double encoderRev = encoderDeg / 360.0;
-        return ENCODER_ZERO_TICKS + encoderRev * ENCODER_TICKS_PER_REV;
+        return cmd;
     }
 
     // ---------------- Helpers ----------------
-    private void resetOdomFilters() {
-        odomFiltInit = false;
-        turretRelDegFilt = 0.0;
-        lastTurretRelDegFilt = 0.0;
-        turretRelRateDegPerSecFilt = 0.0;
-    }
-
-    private void resetVisionFilters() {
-        vFiltInit = false;
-        txFilt = 0.0;
-        txRateDegPerSecFilt = 0.0;
-        lastTxFilt = 0.0;
+    private void resetFilters() {
+        filtInit = false;
+        errFilt = 0.0;
+        errRateFilt = 0.0;
+        lastErrFilt = 0.0;
     }
 
     private static double slewLimit(double current, double target, double maxDelta) {
@@ -445,10 +497,19 @@ public class D_DualTurret {
         return 0.0;
     }
 
-    /** Wrap degrees to (-180, +180]. */
-    public static double wrapDeg(double deg) {
-        while (deg <= -180.0) deg += 360.0;
-        while (deg >  180.0) deg -= 360.0;
-        return deg;
+    private static double wrapAngle(double rad) {
+        while (rad <= -Math.PI) rad += 2.0 * Math.PI;
+        while (rad > Math.PI) rad -= 2.0 * Math.PI;
+        return rad;
     }
+
+    // ---------------- Dashboard-friendly getters ----------------
+    public double getLastErrDeg() { return lastErrDeg; }
+    public double getLastErrRateDegPerSec() { return lastErrRateDegPerSec; }
+    public double getLastOut() { return out; }
+
+    public double getLastOdomErrDeg() { return lastOdomErrDeg; }
+    public double getLastLLErrDeg() { return lastLLErrDeg; }
+    public double getTurretAbsDeg() { return Math.toDegrees(getTurretAbsYawRad()); }
+    //public double getTurretRelDeg(double drivetrainYawRad) { return getTurretRelDeg(drivetrainYawRad); }
 }

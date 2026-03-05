@@ -165,6 +165,7 @@ public class D_Turret {
     public Action search() {
         return packet -> {
             loop();
+            updateLimelight();
             return true;
         };
     }

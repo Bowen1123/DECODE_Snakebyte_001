@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
+import androidx.annotation.NonNull;
+
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -111,7 +114,7 @@ public class C_Shooter  {
         } else if (distance_INCH >= 105){
             rpm = 3125;
         } else {
-            rpm = 2550;
+            rpm = 2350;
         }
         //y=8.54487x+1704.53569
         rpm = Range.clip(rpm, ADAPTIVE_RPM_MIN, ADAPTIVE_RPM_MAX);
@@ -122,10 +125,10 @@ public class C_Shooter  {
     /** Holder method #2: distance -> target ramp servo position */
     public double getAdaptiveTargetRampPos(double distance_INCH) {
         double pos;
-        if (distance_INCH < 105) {
+        if (distance_INCH < 100) {
             pos = .4;
-        } else if (distance_INCH >= 105){
-            pos = .78;
+        } else if (distance_INCH >= 100){
+            pos = .84;
         } else {
             pos = 0.38;
         }
@@ -188,10 +191,28 @@ public class C_Shooter  {
     public void setTestTargetRampPos(double pos){
         testTargetRampPos = pos;
     }
+
     public Action updateAction() {
-        return packet -> {
-            update();     // run PID + write motors
-            return true;  // keep running forever
+
+        return new Action() {
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                enabled = true;
+                distanceIn = 110;
+                update();
+
+                return true;
+            }
+        };
+    }
+    public Action ramp() {
+
+        return new Action() {
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                setTestTargetRampPos(.84);
+                return false;
+            }
         };
     }
 
@@ -216,6 +237,8 @@ public class C_Shooter  {
         if (enabled && targetRPM > 0.0) {
             powerCmd = pid.update(encoderMotor.getVelocity());
         }
+
+
 
         topShooter.setPower(powerCmd);
         bottomShooter.setPower(powerCmd);

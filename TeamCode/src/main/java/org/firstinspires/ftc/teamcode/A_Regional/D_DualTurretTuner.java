@@ -1,167 +1,147 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
-import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.PoseVelocity2d;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.util.Range;
 
-@TeleOp(group = "Turret")
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.MecanumDrive;
+
+/**
+ * D_DualTurretTuner (IMU + dual-stage, tuned like BasicTurret)
+ *
+ * Buttons:
+ *  - A: toggle TrackingEnabled
+ *  - B: LOCK_TO_DRIVE
+ *  - X: FORCE ODOM_ONLY
+ *  - Y: FORCE LL_ONLY
+ *  - Dpad: nudge POI (goalX/goalY) to validate odom math
+ *  - Back: sync turret IMU heading to drivetrain heading (offset update)
+ *  - Start: reset turret IMU yaw and sync to drivetrain
+ */
+@Config
+@Disabled
+@TeleOp(group = "Tuning")
 public class D_DualTurretTuner extends LinearOpMode {
 
+    public static double DT_MAX_POWER = 0.6;
+
+    public static String LIMELIGHT_NAME = "limelight";
+    public static String TURRET_SERVO_NAME = "turret";
+    public static String DRIVE_IMU_NAME = "imu";
+    public static String TURRET_IMU_NAME = "turretImu";
+
+    public static double POI_STEP = 2.0;
+
     @Override
-    public void runOpMode() {
-        Limelight3A ll = hardwareMap.get(Limelight3A.class, "limelight");
-        CRServo turretServo = hardwareMap.get(CRServo.class, "turret");
-        DcMotorEx turretEncoder = hardwareMap.get(DcMotorEx.class, "topShooter");
+    public void runOpMode() throws InterruptedException {
 
-        // ---------------- YOUR RR DRIVE HERE ----------------
-        // Replace with your Pinpoint + RR mecanum drive.
-        // Must provide pose heading (radians). We'll convert to degrees.
-        Object drive = null; // placeholder
-        // ----------------------------------------------------
+        MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
 
-        D_DualTurret turret = new D_DualTurret(ll);
-        turret.init(turretServo, turretEncoder);
+        Limelight3A ll = hardwareMap.get(Limelight3A.class, LIMELIGHT_NAME);
+        CRServo turretServo = hardwareMap.get(CRServo.class, TURRET_SERVO_NAME);
+
+        IMU driveImu = hardwareMap.get(IMU.class, DRIVE_IMU_NAME);
+        IMU turretImu = hardwareMap.get(IMU.class, TURRET_IMU_NAME);
+
+        driveImu.resetYaw();
+        turretImu.resetYaw();
+
+        D_DualTurret turret = new D_DualTurret(ll, turretImu);
+        turret.init(turretServo);
         turret.start();
-
-        // Start disabled, pick mode with A/B/X/Y to enable
         turret.setTrackingEnabled(false);
-        turret.setMode(D_DualTurret.Mode.DUAL_STAGE);
+        turret.setMode(D_DualTurret.Mode.AUTO_DUAL);
 
-        FtcDashboard dash = FtcDashboard.getInstance();
+        boolean lastA=false, lastB=false, lastX=false, lastY=false, lastBack=false, lastStart=false;
 
         waitForStart();
 
-        boolean lastA=false, lastB=false, lastX=false, lastY=false;
-        boolean lastBack=false, lastStart=false;
-
         while (opModeIsActive()) {
 
-            // ---- Update RR pose (REPLACE with your real drive code) ----
-            // Example:
-            // drive.updatePoseEstimate();
-            // Pose2d pose = drive.localizer.getPose();
-            Pose2d pose = new Pose2d(0, 0, 0); // placeholder
-            // -----------------------------------------------------------
+            // Drive
+            drive.updatePoseEstimate();
+            Pose2d pose = drive.localizer.getPose();
 
-            double drivetrainHeadingDeg = Math.toDegrees(pose.heading.toDouble());
+            drive.setDrivePowers(new PoseVelocity2d(
+                    new Vector2d(
+                            Range.clip(Math.pow(-gamepad1.left_stick_y, 3), -DT_MAX_POWER, DT_MAX_POWER),
+                            Range.clip(Math.pow(-gamepad1.left_stick_x, 3), -DT_MAX_POWER, DT_MAX_POWER)
+                    ),
+                    Range.clip(Math.pow(-gamepad1.right_stick_x, 3), -DT_MAX_POWER, DT_MAX_POWER)
+            ));
 
-            // Buttons set modes directly:
-            // A -> Limelight only
-            // B -> Lock to drivetrain
-            // X -> Odometry only
-            // Y -> Dual stage
-            boolean a = gamepad1.a;
-            boolean b = gamepad1.b;
-            boolean x = gamepad1.x;
-            boolean y = gamepad1.y;
+            // Drivetrain yaw
+            YawPitchRollAngles a = driveImu.getRobotYawPitchRollAngles();
+            double driveYawRad = a.getYaw(AngleUnit.RADIANS);
 
-            // Optional:
-            // BACK -> disable tracking immediately
-            // START -> enable tracking (without changing mode)
-            boolean back = gamepad1.back;
-            boolean start = gamepad1.start;
+            // Mode buttons
+            boolean A = gamepad1.a;
+            boolean B = gamepad1.b;
+            boolean X = gamepad1.x;
+            boolean Y = gamepad1.y;
+            boolean BACK = gamepad1.back;
+            boolean START = gamepad1.start;
 
-            if (a && !lastA) {
-                turret.setMode(D_DualTurret.Mode.LIMELIGHT_ONLY);
-                turret.setTrackingEnabled(true);
-            }
-            if (b && !lastB) {
-                turret.setMode(D_DualTurret.Mode.LOCK_TO_DRIVETRAIN);
-                turret.setTrackingEnabled(true);
-            }
-            if (x && !lastX) {
-                turret.setMode(D_DualTurret.Mode.ODOMETRY_ONLY);
-                turret.setTrackingEnabled(true);
-            }
-            if (y && !lastY) {
-                turret.setMode(D_DualTurret.Mode.DUAL_STAGE);
-                turret.setTrackingEnabled(true);
-            }
+            if (A && !lastA) turret.setTrackingEnabled(!turret.isTrackingEnabled());
+            if (B && !lastB) turret.setMode(D_DualTurret.Mode.LOCK_TO_DRIVE);
+            if (X && !lastX) turret.setMode(D_DualTurret.Mode.ODOM_ONLY);
+            if (Y && !lastY) turret.setMode(D_DualTurret.Mode.LL_ONLY);
 
-            if (back && !lastBack) turret.setTrackingEnabled(false);
-            if (start && !lastStart) turret.setTrackingEnabled(true);
+            // IMU sync helpers
+            if (BACK && !lastBack) turret.syncTurretImuToDrivetrain(driveYawRad);
+            if (START && !lastStart) turret.resetTurretImuYawAndSync(driveYawRad);
 
-            lastA=a; lastB=b; lastX=x; lastY=y;
-            lastBack=back; lastStart=start;
+            lastA=A; lastB=B; lastX=X; lastY=Y; lastBack=BACK; lastStart=START;
 
-            boolean aimed = turret.update(drivetrainHeadingDeg);
+            // POI nudge (lets you see odom response)
+            if (gamepad1.dpad_up)    D_DualTurret.goalY += POI_STEP;
+            if (gamepad1.dpad_down)  D_DualTurret.goalY -= POI_STEP;
+            if (gamepad1.dpad_right) D_DualTurret.goalX += POI_STEP;
+            if (gamepad1.dpad_left)  D_DualTurret.goalX -= POI_STEP;
 
-            // ---- Tuning-friendly telemetry (degrees) ----
-            double turretRelDeg = turret.getTurretRelativeHeadingDeg();
+            // Turret updates
+            turret.updateLimelight();
+            boolean aimed = turret.loop(pose, driveYawRad);
 
-            double targetRelDeg;
-            if (turret.getMode() == D_DualTurret.Mode.LIMELIGHT_ONLY) {
-                targetRelDeg = Double.NaN;
-            } else if (turret.getMode() == D_DualTurret.Mode.LOCK_TO_DRIVETRAIN) {
-                targetRelDeg = 0.0;
-            } else {
-                targetRelDeg = D_DualTurret.wrapDeg(D_DualTurret.GOAL_FIELD_HEADING_DEG - drivetrainHeadingDeg);
-            }
+            telemetry.addLine("=== DualTurret (IMU) Tuner ===");
+            telemetry.addData("TrackingEnabled", turret.isTrackingEnabled());
+            telemetry.addData("Mode", turret.getMode());
+            telemetry.addData("Stage", turret.getStage());
+            telemetry.addData("Aimed", aimed);
 
-            double odomErrDeg = Double.isNaN(targetRelDeg) ? Double.NaN : D_DualTurret.wrapDeg(targetRelDeg - turretRelDeg);
+            telemetry.addLine("=== POI ===");
+            telemetry.addData("goalX", "%.2f", D_DualTurret.goalX);
+            telemetry.addData("goalY", "%.2f", D_DualTurret.goalY);
 
-            String stage;
-            switch (turret.getMode()) {
-                case LIMELIGHT_ONLY:
-                    stage = "VISION";
-                    break;
-                case LOCK_TO_DRIVETRAIN:
-                    stage = "ODOM(LOCK)";
-                    break;
-                case ODOMETRY_ONLY:
-                    stage = "ODOM";
-                    break;
-                case DUAL_STAGE:
-                default:
-                    boolean gate = Math.abs(odomErrDeg) <= D_DualTurret.ODOM_TO_VISION_GATE_DEG;
-                    stage = (gate && turret.hasTarget()) ? "VISION" : "ODOM";
-                    break;
-            }
+            telemetry.addLine("=== Headings ===");
+            telemetry.addData("DriveYawDeg", "%.2f", Math.toDegrees(driveYawRad));
+            telemetry.addData("TurretAbsDeg", "%.2f", turret.getTurretAbsDeg());
+            telemetry.addData("TurretRelDeg", "%.2f", turret.getTurretRelDeg(driveYawRad));
 
-            TelemetryPacket p = new TelemetryPacket();
-            p.put("trackingEnabled", turret.isTrackingEnabled());
-            p.put("mode", turret.getMode().toString());
-            p.put("stage", stage);
-            p.put("aimed", aimed);
+            telemetry.addLine("=== Errors / Output ===");
+            telemetry.addData("ErrDeg(filt)", "%.2f", turret.getLastErrDeg());
+            telemetry.addData("ErrRateDeg/s(filt)", "%.2f", turret.getLastErrRateDegPerSec());
+            telemetry.addData("Out", "%.3f", turret.getLastOut());
+            telemetry.addData("OdomErrDeg(raw)", "%.2f", turret.getLastOdomErrDeg());
+            telemetry.addData("LLErrDeg(raw)", "%.2f", turret.getLastLLErrDeg());
 
-            p.put("goalFieldDeg", D_DualTurret.GOAL_FIELD_HEADING_DEG);
-            p.put("driveHeadingDeg", drivetrainHeadingDeg);
+            telemetry.addLine("=== Limelight ===");
+            telemetry.addData("HasTarget", turret.hasTarget());
+            telemetry.addData("tx", "%.2f", turret.getTxDeg());
+            telemetry.addData("pipe", D_DualTurret.PIPELINE_INDEX);
 
-            p.put("turretRelDeg", turretRelDeg);
-            p.put("targetRelDeg", targetRelDeg);
-            p.put("odomErrDeg", odomErrDeg);
-            p.put("gateDeg", D_DualTurret.ODOM_TO_VISION_GATE_DEG);
-
-            p.put("LL_hasTarget", turret.hasTarget());
-            p.put("tx_deg", turret.getTxDeg());
-            p.put("ty_deg", turret.getTyDeg());
-
-            dash.sendTelemetryPacket(p);
-
-            telemetry.addData("Controls", "A=LL  B=Lock  X=Odom  Y=Dual  (Start=Enable, Back=Disable)");
-            telemetry.addData("tracking", turret.isTrackingEnabled());
-            telemetry.addData("mode", turret.getMode());
-            telemetry.addData("stage", stage);
-            telemetry.addData("aimed", aimed);
-
-            telemetry.addData("goalFieldDeg", "%.1f", D_DualTurret.GOAL_FIELD_HEADING_DEG);
-            telemetry.addData("driveHeadingDeg", "%.1f", drivetrainHeadingDeg);
-
-            telemetry.addData("turretRelDeg", "%.1f", turretRelDeg);
-            telemetry.addData("targetRelDeg", "%.1f", targetRelDeg);
-            telemetry.addData("odomErrDeg", "%.1f", odomErrDeg);
-
-            telemetry.addData("LL hasTarget", turret.hasTarget());
-            telemetry.addData("LL tx", "%.2f", turret.getTxDeg());
+            telemetry.addLine("Buttons: A=toggle, B=LOCK, X=ODOM_ONLY, Y=LL_ONLY, Back=sync, Start=reset+sync");
             telemetry.update();
         }
-
-        turret.setTrackingEnabled(false);
-        turret.stop();
     }
 }

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.A_Regional;
+package org.firstinspires.ftc.teamcode.A_Regional.Autonomous;
 
 import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -6,27 +6,27 @@ import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
-import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.LeagueChampThursday.C_Blue_Mechanism;
-import org.firstinspires.ftc.teamcode.LeagueMeets.Mechanism_League3;
+import org.firstinspires.ftc.teamcode.A_Regional.C_Intake;
+import org.firstinspires.ftc.teamcode.A_Regional.C_Shooter;
+import org.firstinspires.ftc.teamcode.A_Regional.C_ShooterTurret;
+import org.firstinspires.ftc.teamcode.A_Regional.C_Transfer;
+import org.firstinspires.ftc.teamcode.A_Regional.D_BasicTurret;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
-public class A_FarZoneBlueTwo extends LinearOpMode {
+public class T_TestActions extends LinearOpMode {
     private DcMotorEx intakeMotor;
     private C_Intake intake;
+    private C_ShooterTurret shooterTurret;
 
     /** TRANSFER **/
     private DcMotorEx transferMotor;
@@ -37,7 +37,7 @@ public class A_FarZoneBlueTwo extends LinearOpMode {
     /** SHOOTER **/
     private DcMotorEx topShooter, bottomShooter;
     private Servo shooterRamp;
-    private C_Shooter shooter;
+    // private C_Shooter shooter;
     private Servo leftLED, rightLED;
 
     /** TURRET + LIMELIGHT **/
@@ -78,14 +78,11 @@ public class A_FarZoneBlueTwo extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
 
         initialize_transfer();
-        initialize_shooter();
-        initialize_turret();
+        initialize_shooterTurret();
         initialize_intake();
 
+        AutonomousActions act = new AutonomousActions(intake, transfer, shooterTurret);
         MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
-
-        shooter.setTestTargetRampPos(targetRampPos);
-        shooter.setTestTargetRPM(targetRpm);
 
         Pose2d initialPose = new Pose2d(initX, initY, initHeading);
         Pose2d initialPose2 = new Pose2d(initX, initY+38, initHeading);
@@ -102,6 +99,7 @@ public class A_FarZoneBlueTwo extends LinearOpMode {
         TrajectoryActionBuilder start = drive.actionBuilder(initialPose)
 
                 .lineToY(38);
+
         TrajectoryActionBuilder back = drive.actionBuilder(initialPose2)
 
                 .lineToY(-2, new TranslationalVelConstraint(25));
@@ -124,47 +122,26 @@ public class A_FarZoneBlueTwo extends LinearOpMode {
         waitForStart();
         Actions.runBlocking(
                 new SequentialAction(
+                        act.track(),
+                        new SleepAction(.4),
                         new ParallelAction(
-                                shooter.updateAction()//,
-                                //mechanism.searchLL()
-                        ), new SleepAction(.1),
+                                act.spinFlywheelHold(),
 
-                        new ParallelAction(
-                                shooter.updateAction(),
                                 new SequentialAction(
-                                        // mechanism.searchLL(),
-                                        // mechanism.transfer(),
+                                        new SleepAction(3),
+                                        act.int_tf_outtake(),
                                         new SleepAction(2),
-                                        //   mechanism.intake(),
-
-                                        new SleepAction(.1),
-                                        start.build(),
-                                        //  mechanism.intake(),
-                                        new SleepAction(1),
-                                        back.build(),
-                                        new SleepAction(.4),
-                                        //mechanism.searchLL(),
-                                        //mechanism.transfer(),
-                                        //new SleepAction(1.6),
-                                        new SleepAction(1.6)
-                                        //  StorePose.savePos(drive.localizer.getPose())
-
-
-                                        // new ParallelAction(
-                                        //         start.build(),
-                                        //             mechanism.intake()
-                                        //   ), new SleepAction(.1),
-                                        //   back.build(),
-
+                                        // start.build()),
+                                        act.int_tf_deactivate(),
+                                        new SleepAction(1)
                                 )
-                        )
-                ));
-    }
-    private void initializeServo() {
-        turret = (D_BasicTurret) hardwareMap.get(CRServo.class, "turret");
 
-        transferGate = hardwareMap.get(Servo.class, "transferGate");
-        shooterRamp = hardwareMap.get(Servo.class, "shooterRamp");
+
+
+
+
+
+                )));
     }
 
     private void initialize_intake() {
@@ -176,32 +153,32 @@ public class A_FarZoneBlueTwo extends LinearOpMode {
     private void initialize_transfer() {
         transferMotor = hardwareMap.get(DcMotorEx.class, "transfer");
         transferGate  = hardwareMap.get(Servo.class, "transferGate");
-        color = hardwareMap.get(RevColorSensorV3.class, "color");
+        //color = hardwareMap.get(RevColorSensorV3.class, "color");
 
         // Keep this matching your current constructor usage:
-        transfer = new C_Transfer(transferMotor, transferGate, color);
+        transfer = new C_Transfer(transferMotor, transferGate, null);
         transfer.deactivate();
     }
 
-    private void initialize_shooter() {
-        topShooter = hardwareMap.get(DcMotorEx.class, "topShooter");
-        bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
-        shooterRamp = hardwareMap.get(Servo.class, "shooterRamp");
+    private void initialize_shooterTurret() {
+        // Shooter hardware
+        DcMotorEx topShooter = hardwareMap.get(DcMotorEx.class, "topShooter");
+        DcMotorEx bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
+        Servo shooterRamp = hardwareMap.get(Servo.class, "shooterRamp");
+        Servo leftLED = hardwareMap.get(Servo.class, "leftLED");
+        Servo rightLED = hardwareMap.get(Servo.class, "rightLED");
 
-        leftLED = hardwareMap.get(Servo.class, "leftLED");
-        rightLED = hardwareMap.get(Servo.class, "rightLED");
+        // Turret hardware
+        Limelight3A limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        CRServo turretServo = hardwareMap.get(CRServo.class, "turret");
 
-        shooter = new C_Shooter(topShooter, bottomShooter, shooterRamp, leftLED, rightLED);
-        shooter.setEnabled(false);
-    }
+        // Combined class (does all old init/start internally)
+        shooterTurret = new C_ShooterTurret(
+                topShooter, bottomShooter, shooterRamp, leftLED, rightLED,
+                limelight, turretServo
+        );
 
-    private void initialize_turret() {
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        turretServo = hardwareMap.get(CRServo.class, "turret");
-
-        turret = new D_BasicTurret(limelight);
-        turret.init(turretServo);
-        turret.start();
-        turret.setTrackingEnabled(false);
+        shooterTurret.setShooterEnabled(false);
+        shooterTurret.setTrackingEnabled(false);
     }
 }

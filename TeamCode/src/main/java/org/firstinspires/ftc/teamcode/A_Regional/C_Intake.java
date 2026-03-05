@@ -1,49 +1,44 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
-import com.acmerobotics.roadrunner.Action;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Servo;
 
 public class C_Intake {
-    private DcMotorEx intake;
+    private final DcMotorEx intake;
 
-    private double intake_power_intake = .9, intake_power_outtake = .6;
+    // Keep your defaults, but make them configurable via setters if needed
+    private double intakePower = 0.95;
+    private double outtakePower = 0.55;
 
-    public C_Intake(DcMotorEx motor){
+    public C_Intake(DcMotorEx motor) {
         intake = motor;
-
         intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        deactivate();
     }
 
+    /** Pull in game piece. */
     public void intake() {
-        intake.setPower(intake_power_intake);
+        intake.setPower(intakePower);
     }
 
+    /** Push out (same direction as your original outtake()). */
     public void outtake() {
-        intake.setPower(intake_power_outtake);
+        intake.setPower(outtakePower);
+    }
 
-    }
-    public Action intakes() {
-        return packet -> {
-            intake();
-            return true;
-        };
-    }
-    public Action stop() {
-        return packet -> {
-            deactivate();
-            return true;
-        };
-    }
+    /** Push out opposite direction (your original properOuttake()). */
     public void properOuttake() {
-        intake.setPower(-intake_power_outtake);
+        intake.setPower(-outtakePower);
+    }
 
-    }
     public void deactivate() {
-        intake.setPower(0);
+        intake.setPower(0.0);
     }
+
+    // Optional setters (nice for tuning quickly)
+    public void setIntakePower(double p) { intakePower = p; }
+    public void setOuttakePower(double p) { outtakePower = p; }
+
+    public double getIntakePower() { return intakePower; }
+    public double getOuttakePower() { return outtakePower; }
 }

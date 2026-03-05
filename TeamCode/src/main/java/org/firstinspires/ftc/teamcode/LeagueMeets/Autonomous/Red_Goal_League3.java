@@ -7,12 +7,15 @@ import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.LeagueMeets.Mechanism_League3;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
+@Disabled
+
 public class Red_Goal_League3 extends LinearOpMode {
     private double initX = -52, initY = 52, initHeading = Math.toRadians(-225);
     private double goalX = -17, goalY = 17, goalHeading = Math.toRadians(-220);

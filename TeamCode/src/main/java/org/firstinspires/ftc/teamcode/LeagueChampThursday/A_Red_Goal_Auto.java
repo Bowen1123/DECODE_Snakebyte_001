@@ -9,6 +9,7 @@ import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -22,6 +23,8 @@ import org.firstinspires.ftc.teamcode.LeagueMeets.Mechanism_League3;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
+@Disabled
+
 public class A_Red_Goal_Auto extends LinearOpMode {
     private DcMotorEx leftFront, leftBack, rightFront, rightBack;
     private DcMotorEx intake, transfer, topShooter, bottomShooter;

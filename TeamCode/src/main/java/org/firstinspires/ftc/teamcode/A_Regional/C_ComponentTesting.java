@@ -19,23 +19,20 @@ import org.firstinspires.ftc.teamcode.MecanumDrive;
  * Component testing for TRANSFER + SHOOTER + TURRET (Limelight AprilTag tracking)
  *
  * TRANSFER (Gamepad1):
+ *  - Right Trigger : outtake()
  *  - Right Bumper  : intake()
- *  - Left Bumper : outtake()
+ *  - Left Bumper   : properOuttake()
  *  - else          : deactivate()
  *
- * SHOOTER (Gamepad2):
+ * SHOOTER (Gamepad1):
  *  - X toggle shooter enable
- *  - DpadUp/Down adjust TEST_DISTANCE_IN (fallback when no tag)
- *  - Y ramp max | A ramp min (sanity)
  *
- * TURRET (Gamepad2):
- *  - B toggle AprilTag tracking (uses Limelight tx)
- *  - If tracking enabled, turret auto aims using D_Turret.loop()
- *  - If tracking disabled, turret power is 0 (or you can add manual bumpers)
+ * TURRET (Gamepad1):
+ *  - A toggle AprilTag tracking (uses Limelight tx)
  *
  * Distance:
- *  - Uses Limelight ty + mount geometry inside D_Turret.getGroundDistanceInches()
- *  - If no valid target, shooter uses C_Shooter.TEST_DISTANCE_IN fallback
+ *  - Uses Limelight ty + mount geometry inside shooterTurret.getGroundDistanceInches()
+ *  - If no valid target, keep last distanceIn
  */
 @Config
 @TeleOp(group = "Component")
@@ -50,60 +47,50 @@ public class C_ComponentTesting extends LinearOpMode {
     private RevColorSensorV3 color;
     private C_Transfer transfer;
 
-    /** SHOOTER **/
-    private DcMotorEx topShooter, bottomShooter;
-    private Servo shooterRamp;
-    private C_Shooter shooter;
-    private Servo leftLED, rightLED;
-
-    /** TURRET + LIMELIGHT **/
-    private Limelight3A limelight;
-    private CRServo turretServo;
-    private D_BasicTurret turret;
+    /** SHOOTER + TURRET (COMBINED) **/
+    private C_ShooterTurret shooterTurret;
 
     /** Drive **/
     private MecanumDrive drive;
 
     // Toggle state
-    private boolean lastB2 = false;
     private boolean turretTracking = false;
-
-    private boolean lastX2 = false;
     private boolean shooterEnabled = false;
 
-    private double  distanceIn = 70;
+    private double distanceIn = 70;
+
     /// Drive
-    private double dt_max_power = 0.9;
+    private double dt_max_power = 0.67;
+
     private double targetRpm = 2400, targetRampPos = 0.38;
 
     @Override
     public void runOpMode() throws InterruptedException {
-        initialize_transfer();
-        initialize_shooter();
-        initialize_turret();
+        initialize_shooterTurret();
         initialize_intake();
+        initialize_transfer();
 
-        MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
+        drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
 
-        shooter.setTestTargetRampPos(targetRampPos);
-        shooter.setTestTargetRPM(targetRpm);
+        // If you want to use test targets (currently commented out in shooterUpdate() in C_ShooterTurret)
+        shooterTurret.setTestTargetRampPos(targetRampPos);
+        shooterTurret.setTestTargetRPM(targetRpm);
 
         waitForStart();
 
         while (opModeIsActive()) {
 
-            // ---------------- TRANSFER ----------------
+            // ---------------- TRANSFER + INTAKE ----------------
             if (gamepad1.right_trigger > .2) {
                 intake.outtake();
                 transfer.outtake();
             } else if (gamepad1.right_bumper) {
                 intake.intake();
                 transfer.intake();
-            } else if(gamepad1.left_bumper){
-                transfer.properOutake();
+            } else if (gamepad1.left_bumper) {
+                transfer.properOuttake();
                 intake.properOuttake();
-            }//Soren was here abnd he is the worst programmer in the org
-            else {
+            } else {
                 intake.deactivate();
                 transfer.deactivate();
             }
@@ -111,62 +98,87 @@ public class C_ComponentTesting extends LinearOpMode {
             // ---------------- TURRET TRACKING TOGGLE ----------------
             if (gamepad1.aWasPressed()) {
                 turretTracking = !turretTracking;
-                turret.setTrackingEnabled(turretTracking);
+                shooterTurret.setTrackingEnabled(turretTracking);
             }
 
-            // Update Limelight + run turret loop
-            turret.updateLimelight();
-            boolean aimed = turret.loop();
+            ///  ADDED THIS MORNING
+//            if (!shooterTurret.isTrackingEnabled()){
+//                if (gamepad2.left_bumper){
+//                    shooterTurret.setTurretPower(.25);
+//                } else if (gamepad2.right_bumper){
+//                    shooterTurret.setTurretPower(-.25);
+//                } else {
+//                    shooterTurret.setTurretPower(0);
+//                }
+//            }
 
-            // ---------------- DISTANCE SOURCE (Limelight if valid, else fallback) ----------------
-            if (turret.hasTarget()) {
-                distanceIn = turret.getGroundDistanceInches();
+
+
+            // Update Limelight + run turret loop
+            shooterTurret.updateLimelight();
+            boolean aimed = shooterTurret.turretLoop();
+
+
+            // ---------------- DISTANCE SOURCE (Limelight if valid) ----------------
+            if (shooterTurret.hasTarget()) {
+                distanceIn = shooterTurret.getGroundDistanceInches();
             }
 
             // ---------------- SHOOTER TOGGLE ----------------
             if (gamepad1.xWasPressed()) {
                 shooterEnabled = !shooterEnabled;
-                shooter.setEnabled(shooterEnabled);
-                shooter.resetController();
+                shooterTurret.setShooterEnabled(shooterEnabled);
+                shooterTurret.resetShooterController();
             }
 
-            ;
-            ///  TEST VALUES ///
-//            if (gamepad1.dpadDownWasPressed()) {
-//                targetRpm -= 50;
-//            }
-//            if (gamepad1.dpadUpWasPressed()) {
-//                targetRpm += 50;
-//            }
-//
-//            if (gamepad1.dpadRightWasPressed()) {
-//                targetRampPos -= .02;
-//            }
-//            if (gamepad1.dpadLeftWasPressed()) {
-//                targetRampPos += .02;
-//            }
-//            shooter.setTestTargetRampPos(targetRampPos);
-//            shooter.setTestTargetRPM(targetRpm);
-
             // Shooter update
-            shooter.syncFromDashboard();
-            shooter.setDistanceInches(distanceIn);
-            double shooterPowerCmd = shooter.update();
+            shooterTurret.syncFromDashboard();
+            shooterTurret.setDistanceInches(distanceIn);
+            double shooterPowerCmd = shooterTurret.shooterUpdate();
 
             ///  Drive
+
+            if (gamepad2.yWasPressed()){
+                dt_max_power = 0.9;
+            } else if (gamepad2.xWasPressed()){
+                dt_max_power = 0.7;
+            } else if (gamepad2.aWasPressed()){
+                dt_max_power = 0.5;
+            }
+
             drive.updatePoseEstimate();
             Pose2d pose = drive.localizer.getPose();
+
+            double forwardMax = dt_max_power;
+            double strafeMax = Math.min(dt_max_power * 1.2, 1);
+
             drive.setDrivePowers(new PoseVelocity2d(
                     new Vector2d(
-                            Range.clip(-gamepad1.left_stick_y, -dt_max_power, dt_max_power),
-                            Range.clip(-gamepad1.left_stick_x, -dt_max_power, dt_max_power)
+                            Range.clip(Math.pow(-gamepad1.left_stick_y, 3), -forwardMax, forwardMax),
+                            Range.clip(Math.pow(-gamepad1.left_stick_x, 3), -strafeMax, strafeMax)
                     ),
-                    Range.clip(-gamepad1.right_stick_x, -dt_max_power * .5, dt_max_power * .5)
+                    Range.clip(Math.pow(-gamepad1.right_stick_x, 3), -forwardMax, forwardMax)
             ));
 
+            // Pipeline switching (uses shooterTurret now)
+            if (gamepad2.yWasPressed()) {
+                shooterTurret.setPipeline(1);
+            }
+            if (gamepad2.xWasPressed()) {
+                shooterTurret.setPipeline(0);
+            }
 
-            telemetry.addData("TEST RPM: ", targetRpm);
-            telemetry.addData("TEST POS: ", targetRampPos);
+            if (!shooterTurret.isTrackingEnabled()) {
+                shooterTurret.setBothLEDPos(0.71);
+            } else if (aimed){
+                shooterTurret.setBothLEDPos(0.5);
+            } else {
+                shooterTurret.setBothLEDPos(0.3);
+            }
+
+            telemetry.addData("Pipeline", shooterTurret.getPipeline());
+            telemetry.addData("TEST RPM", targetRpm);
+            telemetry.addData("TEST POS", targetRampPos);
 
             // ---------------- TELEMETRY ----------------
             telemetry.addLine("=== TRANSFER ===");
@@ -174,60 +186,63 @@ public class C_ComponentTesting extends LinearOpMode {
             telemetry.addData("Transfer Power", transferMotor.getPower());
 
             telemetry.addLine("=== TURRET / LIMELIGHT ===");
-            telemetry.addData("Tracking Enabled", turret.isTrackingEnabled());
+            telemetry.addData("Tracking Enabled", shooterTurret.isTrackingEnabled());
             telemetry.addData("Aimed (deadband)", aimed);
-            telemetry.addData("Has Target", turret.hasTarget());
-            telemetry.addData("tx (deg)", turret.getTxDeg());
-            telemetry.addData("ty (deg)", turret.getTyDeg());
+            telemetry.addData("Has Target", shooterTurret.hasTarget());
+            telemetry.addData("tx (deg)", shooterTurret.getTxDeg());
+            telemetry.addData("ty (deg)", shooterTurret.getTyDeg());
             telemetry.addData("Distance (in)", distanceIn);
 
             telemetry.addLine("=== SHOOTER ===");
-            telemetry.addData("Enabled", shooter.isEnabled());
-            telemetry.addData("Target RPM", "%.0f", shooter.getTargetRPM());
-            telemetry.addData("Measured RPM", "%.0f", shooter.getMeasuredRPM());
+            telemetry.addData("Enabled", shooterTurret.isShooterEnabled());
+            telemetry.addData("Target RPM", "%.0f", shooterTurret.getTargetRPM());
+            telemetry.addData("Measured RPM", "%.0f", shooterTurret.getMeasuredRPM());
             telemetry.addData("Power Cmd", "%.3f", shooterPowerCmd);
-            telemetry.addData("Ramp Pos", "%.3f", shooter.getRampPosition());
-            telemetry.addData("At Target", shooter.isAtTarget());
+            telemetry.addData("Ramp Pos", "%.3f", shooterTurret.getRampPosition());
+            telemetry.addData("At Target", shooterTurret.isAtTarget());
 
             telemetry.update();
         }
     }
+
     private void initialize_intake() {
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intake");
-
         intake = new C_Intake(intakeMotor);
     }
 
     private void initialize_transfer() {
         transferMotor = hardwareMap.get(DcMotorEx.class, "transfer");
-        transferGate  = hardwareMap.get(Servo.class, "transferGate");
-        color = hardwareMap.get(RevColorSensorV3.class, "color");
+        transferGate = hardwareMap.get(Servo.class, "transferGate");
 
-        // Keep this matching your current constructor usage:
+        // color is unused; keep null-safe
+        try {
+            color = hardwareMap.get(RevColorSensorV3.class, "color");
+        } catch (Exception e) {
+            color = null;
+        }
+
         transfer = new C_Transfer(transferMotor, transferGate, color);
-        transfer.deactivate();
     }
 
-    private void initialize_shooter() {
-        topShooter = hardwareMap.get(DcMotorEx.class, "topShooter");
-        bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
-        shooterRamp = hardwareMap.get(Servo.class, "shooterRamp");
+    private void initialize_shooterTurret() {
+        // Shooter hardware
+        DcMotorEx topShooter = hardwareMap.get(DcMotorEx.class, "topShooter");
+        DcMotorEx bottomShooter = hardwareMap.get(DcMotorEx.class, "bottomShooter");
+        Servo shooterRamp = hardwareMap.get(Servo.class, "shooterRamp");
+        Servo leftLED = hardwareMap.get(Servo.class, "leftLED");
+        Servo rightLED = hardwareMap.get(Servo.class, "rightLED");
 
-        leftLED = hardwareMap.get(Servo.class, "leftLED");
-        rightLED = hardwareMap.get(Servo.class, "rightLED");
+        // Turret hardware
+        Limelight3A limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        CRServo turretServo = hardwareMap.get(CRServo.class, "turret");
 
-        shooter = new C_Shooter(topShooter, bottomShooter, shooterRamp, leftLED, rightLED);
-        shooter.setEnabled(false);
+        // Combined class (does all old init/start internally)
+        shooterTurret = new C_ShooterTurret(
+                topShooter, bottomShooter, shooterRamp, leftLED, rightLED,
+                limelight, turretServo
+        );
+
+        shooterTurret.setShooterEnabled(false);
+        shooterTurret.setTrackingEnabled(false);
     }
-
-    private void initialize_turret() {
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        turretServo = hardwareMap.get(CRServo.class, "turret");
-
-        turret = new D_BasicTurret(limelight);
-        turret.init(turretServo);
-        turret.start();
-        turret.setTrackingEnabled(false);
-    }
-
 }

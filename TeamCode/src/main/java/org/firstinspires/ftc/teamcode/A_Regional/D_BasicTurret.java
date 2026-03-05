@@ -1,6 +1,10 @@
 package org.firstinspires.ftc.teamcode.A_Regional;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -44,7 +48,7 @@ public class D_BasicTurret {
 
     // ---------------- Controller (PD + kS) ----------------
     // Start values: KP 0.02–0.06, KD 0.001–0.004 depending on noise and speed
-    public static double KP = 0.013;
+    public static double KP = 0.011;
     public static double KD = 0.003;
 
     // Static friction feedforward: increase until it moves reliably at small tx (2–4 deg)
@@ -62,7 +66,7 @@ public class D_BasicTurret {
 
     // ---------------- Output limits ----------------
     public static double MAX_POWER = 0.45;
-    public static double MIN_POWER = 0.2;       // helps overcome stiction
+    public static double MIN_POWER = 0.17;       // helps overcome stiction
     public static double SLEW_POWER_PER_SEC = 100;
 
     // ---------------- Target handling ----------------
@@ -141,6 +145,7 @@ public class D_BasicTurret {
             hasValidTarget = true;
             txDeg = r.getTx();
             tyDeg = r.getTy();
+
             lastSeenSec = tSec;
         } else {
             hasValidTarget = false;
@@ -165,6 +170,19 @@ public class D_BasicTurret {
         if (Math.abs(tan) < 1e-6) return Double.NaN;
 
         return deltaH / tan;
+    }
+
+    public Action track() {
+        return new Action() {
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                    setTrackingEnabled(true);
+                    updateLimelight();
+                    // loop();
+                    return !loop();
+
+            }
+        };
     }
 
     /**
@@ -253,6 +271,14 @@ public class D_BasicTurret {
 
         turretServo.setPower(out);
         return false;
+    }
+
+    public void setPipeline(int pipe){
+        ll.pipelineSwitch(pipe);
+        PIPELINE_INDEX = pipe;
+    }
+    public int getPipeline(){
+        return PIPELINE_INDEX;
     }
 
     /** Stops the turret immediately. */

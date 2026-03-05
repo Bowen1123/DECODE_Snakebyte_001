@@ -6,12 +6,15 @@ import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.VelConstraint;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.LeagueMeets.Mechanism_League2;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 @Autonomous
+@Disabled
+
 public class Blue_Goal_New_Pathing extends LinearOpMode {
 
     @Override
